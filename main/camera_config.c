@@ -1,4 +1,4 @@
-#include "camera_config.h"
+#include "./include/camera_config.h"
 #include "esp_camera.h"
 #include "esp_log.h"
 

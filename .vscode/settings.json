@@ -9,5 +9,8 @@
     "idf.toolsPathWin": "c:\\esp\\esp-idf\\tools",
     "idf.customExtraVars": {
         "IDF_TARGET": "esp32s3"
+    },
+    "files.associations": {
+        "camera_config.h": "c"
     }
 }

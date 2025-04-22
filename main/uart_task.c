@@ -1,12 +1,12 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "uart_comm.h"
+#include "./include/uart_comm.h"
 #define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #include "esp_log.h"
 #include <string.h>
 #include "esp_mac.h"
 #include "freertos/FreeRTOSConfig.h" // Ensure configTICK_RATE_HZ is defined
-#include "uart_task.h"
+#include "./include/uart_task.h"
 
 static const char *TAG = "UART_TASK";
 

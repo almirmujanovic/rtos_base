@@ -10,11 +10,11 @@
 #include "lwip/ip4_addr.h"
 #include "esp_mac.h"
 
-#include "tcp_server.h"
-#include "camera_config.h"
-#include "camera_task.h"
-#include "uart_comm.h"
-#include "uart_task.h"
+#include "./include/tcp_server.h"
+#include "./include/camera_config.h"
+#include "./include/camera_task.h"
+#include "./include/uart_comm.h"
+#include "./include/uart_task.h"
 
 #ifndef CONFIG_LOG_MAXIMUM_LEVEL
 #define CONFIG_LOG_MAXIMUM_LEVEL ESP_LOG_VERBOSE
@@ -29,17 +29,17 @@ static const char *TAG = "MAIN";
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                int32_t event_id, void* event_data) {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        ESP_LOGI(TAG, "🚀 WiFi STA starting...");
+        ESP_LOGI(TAG, " WiFi STA starting...");
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
-        ESP_LOGI(TAG, "✅ WiFi STA connected");
+        ESP_LOGI(TAG, " WiFi STA connected");
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         wifi_event_sta_disconnected_t* disconn = (wifi_event_sta_disconnected_t*) event_data;
-        ESP_LOGW(TAG, "❌ WiFi disconnected. Reason: %d", disconn->reason);
+        ESP_LOGW(TAG, "WiFi disconnected. Reason: %d", disconn->reason);
         esp_wifi_connect(); // Retry
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "🌐 Got IP Address: " IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI(TAG, "IP Address: " IPSTR, IP2STR(&event->ip_info.ip));
         ESP_LOGI(TAG, "Gateway: " IPSTR, IP2STR(&event->ip_info.gw));
         ESP_LOGI(TAG, "Netmask: " IPSTR, IP2STR(&event->ip_info.netmask));
     }
@@ -95,11 +95,6 @@ void app_main(void) {
     wifi_init_sta();
     //uart_init();
 
-    // Print MAC address
-    uint8_t mac[6];
-    esp_read_mac(mac, ESP_MAC_WIFI_STA);  // Get STA MAC
-    ESP_LOGI("MAIN", "MAC Address: %02X:%02X:%02X:%02X:%02X:%02X",
-            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
     // Print IP address
     esp_netif_ip_info_t ip_info;

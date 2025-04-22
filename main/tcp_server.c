@@ -54,16 +54,16 @@ void tcp_server_task(void *pvParameters) {
         struct sockaddr_in6 source_addr;
         socklen_t addr_len = sizeof(source_addr);
 
-        ESP_LOGI(TAG, "🔍 Waiting for a client to connect...");
+        ESP_LOGI(TAG, " Waiting for a client to connect...");
 
         int sock = accept(listen_sock, (struct sockaddr *)&source_addr, &addr_len);
         if (sock < 0) {
-            ESP_LOGE(TAG, "❌ Accept failed: errno %d", errno);
+            ESP_LOGE(TAG, " Accept failed: errno %d", errno);
             continue;
         }
 
         inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, addr_str, sizeof(addr_str) - 1);
-        ESP_LOGI(TAG, "✅ Client connected from %s", addr_str);
+        ESP_LOGI(TAG, " Client connected from %s", addr_str);
 
         // Set the global socket
         global_sock = sock;
@@ -72,10 +72,10 @@ void tcp_server_task(void *pvParameters) {
         while (1) {
             int ret = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, MSG_PEEK);
             if (ret == 0) {
-                ESP_LOGW(TAG, "⚠️ Client disconnected");
+                ESP_LOGW(TAG, " Client disconnected");
                 break;
             } else if (ret < 0) {
-                ESP_LOGE(TAG, "❌ recv() error: errno %d", errno);
+                ESP_LOGE(TAG, " recv() error: errno %d", errno);
                 break;
             }
 
@@ -84,7 +84,7 @@ void tcp_server_task(void *pvParameters) {
 
         close(sock);
         global_sock = -1;
-        ESP_LOGI(TAG, "🔌 Connection closed. Waiting for next client...");
+        ESP_LOGI(TAG, " Connection closed. Waiting for next client...");
     }
 
     // Cleanup (won’t be reached)

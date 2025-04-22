@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "main.c" 
+    SRCS "vl53l0x_task.c" "main.c" 
     "tcp_server.c" 
     "uart_comm.c" "uart_task.c" 
     "camera_config.c" "camera_task.c"

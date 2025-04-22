@@ -1,10 +1,10 @@
-#include "camera_task.h"
-#include "camera_config.h"
+#include "./include/camera_task.h"
+#include "./include/camera_config.h"
 #include "esp_camera.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "tcp_server.h"
+#include "./include/tcp_server.h"
 #include <sys/socket.h>
 #include <errno.h>
 
@@ -40,7 +40,7 @@ void camera_task(void *param) {
         uint32_t len = fb->len;
         int res = send(global_sock, &len, sizeof(len), 0);
         if (res <= 0) {
-            ESP_LOGE(TAG, "❌ Failed to send frame length (%u bytes). Error: %d", (unsigned int)len, errno);
+            ESP_LOGE(TAG, "Failed to send frame length (%u bytes). Error: %d", (unsigned int)len, errno);
             global_sock = -1;
             esp_camera_fb_return(fb);
             continue;
@@ -51,7 +51,7 @@ void camera_task(void *param) {
         ESP_LOGI(TAG, "🔁 Sent frame length: %u (res=%d)", (unsigned int)len, res);
     
         if (res <= 0) {
-            ESP_LOGE(TAG, "❌ Failed to send frame buffer (%u bytes). Error: %d", (unsigned int)len, errno);
+            ESP_LOGE(TAG, "Failed to send frame buffer (%u bytes). Error: %d", (unsigned int)len, errno);
             global_sock = -1;
         }
     

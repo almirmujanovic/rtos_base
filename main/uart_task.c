@@ -9,7 +9,7 @@
 #include "./include/uart_task.h"
 
 static const char *TAG = "UART_TASK";
-
+/*
 void uart_task(void *pvParameters) {
     char rx_buffer[128];
 
@@ -22,4 +22,21 @@ void uart_task(void *pvParameters) {
         }
         vTaskDelay(pdMS_TO_TICKS(20));
     }
+}*/
+
+void uart_task(void *pvParameters) {
+    const char *test_msg = "Hello Arduino!\n";
+    char rx_buf[128];
+
+    while (1) {
+        uart_send_line(test_msg);
+        int len = uart_read_line(rx_buf, sizeof(rx_buf) - 1);
+        if (len > 0) {
+            ESP_LOGI("UART_TEST", "Echo: %s", rx_buf);
+        } else {
+            ESP_LOGW("UART_TEST", "No echo received");
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
+

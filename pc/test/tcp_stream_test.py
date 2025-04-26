@@ -4,7 +4,7 @@ import time
 import cv2
 import numpy as np
 
-ESP32_IP = '192.168.1.56'
+ESP32_IP = '192.168.1.9'
 ESP32_PORT = 3333
 RETRY_DELAY = 3
 TIMEOUT = 5

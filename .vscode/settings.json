@@ -11,6 +11,8 @@
         "IDF_TARGET": "esp32s3"
     },
     "files.associations": {
-        "camera_config.h": "c"
+        "camera_config.h": "c",
+        "string.h": "c",
+        "freertos.h": "c"
     }
 }

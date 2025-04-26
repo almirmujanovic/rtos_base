@@ -4,8 +4,8 @@
 #include <string.h>
 
 #define UART_PORT UART_NUM_1
-#define UART_TX_PIN 17
-#define UART_RX_PIN 18
+#define UART_TX_PIN 43
+#define UART_RX_PIN 44
 #define UART_BAUD_RATE 115200
 
 static const char *TAG = "UART_COMM";

@@ -3,7 +3,7 @@
 #include "lwip/sockets.h"
 #include "esp_log.h"
 #include "string.h"
-#include "tcp_server.h"
+#include "./include/tcp_server.h"
 #include <errno.h>
 
 #define PORT 3333

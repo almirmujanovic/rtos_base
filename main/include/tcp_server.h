@@ -8,6 +8,7 @@ extern "C" {
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+extern int global_sock;  // Global socket variable for TCP communication
 /**
  * @brief Task that handles incoming TCP connections and communication with PC
  * 

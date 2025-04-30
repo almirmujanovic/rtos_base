@@ -4,9 +4,9 @@
 #include <string.h>
 
 #define UART_PORT UART_NUM_1
-#define UART_TX_PIN 43
-#define UART_RX_PIN 44
-#define UART_BAUD_RATE 115200
+#define UART_TX_PIN 17
+#define UART_RX_PIN 18
+#define UART_BAUD_RATE 9600
 
 static const char *TAG = "UART_COMM";
 
@@ -33,6 +33,14 @@ void uart_send_line(const char *data) {
 
 int uart_read_line(char *buf, int max_len) {
     int len = uart_read_bytes(UART_PORT, (uint8_t *)buf, max_len, pdMS_TO_TICKS(100));
+    if (len > 0) {
+        for (int i = 0; i < len; i++) {
+            ESP_LOGI("UART_RAW", "Byte %d: 0x%02X (%c)", i, buf[i], buf[i]);
+        }
+    } else {
+        ESP_LOGW("UART_TEST", "No echo received");
+    }
+    
     if (len > 0) {
         buf[len] = '\0'; // Null-terminate
     }

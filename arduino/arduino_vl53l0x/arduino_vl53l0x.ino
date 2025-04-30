@@ -12,7 +12,7 @@ void setup() {
   while (!Serial) delay(1);  // Wait for native USB
 
   // Initialize VL53L0X
-  Serial.println("Adafruit VL53L0X test");
+  Serial.println("VL53L0X test");
   if (!lox.begin()) {
     Serial.println(F("Failed to boot VL53L0X"));
     while (1);

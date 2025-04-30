@@ -127,7 +127,7 @@ void vl53l0x_debug_task(void *arg) {
 
 
 void app_main(void) {
-
+/*
     ESP_LOGI("PSRAM", "PSRAM size: %d bytes", esp_psram_get_size());
     if (esp_psram_get_size() == 0) {
         ESP_LOGE("PSRAM", "PSRAM NOT FOUND!");
@@ -139,7 +139,6 @@ void app_main(void) {
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_LOGI(TAG, "Initializing WiFI... ");
     wifi_init_sta();
-    //uart_init();
 
 
     // Print IP address
@@ -152,8 +151,8 @@ void app_main(void) {
     } else {
         ESP_LOGW("MAIN", "Failed to get IP info.");
     }
-
-    vTaskDelay(pdMS_TO_TICKS(200));
+*/
+  //  vTaskDelay(pdMS_TO_TICKS(200));
 /*
     if (init_camera() != ESP_OK) {
         ESP_LOGE("MAIN", "Camera init failed!");
@@ -164,22 +163,27 @@ void app_main(void) {
 // init the i2c
 
 
-    vTaskDelay(pdMS_TO_TICKS(500));
-    init_i2c_master_vl53l0x();
+ //   vTaskDelay(pdMS_TO_TICKS(500));
+  //  init_i2c_master_vl53l0x();
 
    // vl53l0x_hard_reset();
     
    // vTaskDelay(pdMS_TO_TICKS(100));
 
-    xTaskCreate(i2c_scanner_task, "I2C Scanner", 4096, NULL, 5, NULL);
+  //  xTaskCreate(i2c_scanner_task, "I2C Scanner", 4096, NULL, 5, NULL);
 
  //   vTaskDelay(pdMS_TO_TICKS(1000));
 
-    xTaskCreatePinnedToCore(tcp_server_task, "TCP Server", 8192, NULL, 5, NULL, 1);
-    xTaskCreatePinnedToCore(camera_task, "Camera Task", 8192, NULL, 5, NULL, 1);  
-    xTaskCreatePinnedToCore(vl53l0x_task, "VL53L0X Task", 4096, NULL, 5, NULL, 1);
+  //  xTaskCreatePinnedToCore(tcp_server_task, "TCP Server", 8192, NULL, 5, NULL, 1);
+  //  xTaskCreatePinnedToCore(camera_task, "Camera Task", 8192, NULL, 5, NULL, 1);  
+ //   xTaskCreatePinnedToCore(vl53l0x_task, "VL53L0X Task", 4096, NULL, 5, NULL, 1);
   //  vTaskDelay(pdMS_TO_TICKS(500)); // wait for VL53L0X to init
 //    xTaskCreate(vl53l0x_debug_task, "VL53L0X Debug", 4096, NULL, 5, NULL);
-  
-    //xTaskCreatePinnedToCore(uart_task, "UART Task", 4096, NULL, 5, NULL, 0);
+    uart_init();
+
+    xTaskCreatePinnedToCore(uart_task, "UART Task", 4096, NULL, 5, NULL, 0);
+    
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(1000)); // samo da glavni task živi
+    }
 }

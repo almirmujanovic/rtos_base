@@ -1,11 +1,12 @@
 idf_component_register(
     SRCS 
-    "vl53l0x_task.c" "main.c" 
-    "tcp_server.c" 
+    "main.c" 
+    
     "uart_comm.c" "uart_task.c" 
-    "camera_config.c" "camera_task.c"
-    "i2c_init.c"
-    INCLUDE_DIRS "." "include" "../components/vl53l0x/include"
+    "camera_config.c" "camera_task.c" "tcp_camera_stream_task.c"
+    "tcp_server_task.c"
+    
+    INCLUDE_DIRS "." "include" 
     REQUIRES 
         esp32-camera
         nvs_flash 
@@ -18,7 +19,4 @@ idf_component_register(
         esp_psram
         lwip
 )
-
-set(EXTRA_COMPONENT_DIRS ./components/vl53l0x)
-
 

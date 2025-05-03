@@ -2,13 +2,16 @@
 #include "driver/uart.h"
 #include "esp_log.h"
 #include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 
 #define UART_PORT UART_NUM_1
 #define UART_TX_PIN 17
 #define UART_RX_PIN 18
-#define UART_BAUD_RATE 9600
+#define UART_BAUD_RATE 115200
 
 static const char *TAG = "UART_COMM";
+QueueHandle_t uart_line_queue = NULL;  // globalna queue
 
 void uart_init(void) {
     const uart_config_t uart_config = {
@@ -22,7 +25,8 @@ void uart_init(void) {
     uart_driver_install(UART_PORT, 1024 * 2, 0, 0, NULL, 0);
     uart_param_config(UART_PORT, &uart_config);
     uart_set_pin(UART_PORT, UART_TX_PIN, UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-
+   
+    uart_line_queue = xQueueCreate(50, sizeof(char[128]));
     ESP_LOGI(TAG, "UART initialized on TX=%d RX=%d", UART_TX_PIN, UART_RX_PIN);
 }
 
@@ -34,15 +38,9 @@ void uart_send_line(const char *data) {
 int uart_read_line(char *buf, int max_len) {
     int len = uart_read_bytes(UART_PORT, (uint8_t *)buf, max_len, pdMS_TO_TICKS(100));
     if (len > 0) {
-        for (int i = 0; i < len; i++) {
-            ESP_LOGI("UART_RAW", "Byte %d: 0x%02X (%c)", i, buf[i], buf[i]);
-        }
-    } else {
-        ESP_LOGW("UART_TEST", "No echo received");
+        buf[len] = '\0';
+        ESP_LOGI(TAG, "UART received: %s", buf);
+        return len;
     }
-    
-    if (len > 0) {
-        buf[len] = '\0'; // Null-terminate
-    }
-    return len;
+    return 0;
 }

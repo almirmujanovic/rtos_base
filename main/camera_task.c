@@ -4,7 +4,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "./include/tcp_server.h"
+#include "./include/tcp_server_task.h"
 #include <sys/socket.h>
 #include <errno.h>
 
@@ -14,7 +14,7 @@
 
 #define TAG "CAMERA_TASK" 
 
-extern int global_sock;  // defined in tcp_server.c or exposed via header
+extern int camera_sock;  // defined in tcp_server.c or exposed via header
 
 void camera_task(void *param) {
     if (init_camera() != ESP_OK) {
@@ -23,8 +23,8 @@ void camera_task(void *param) {
     }
 
     while (1) {
-        if (global_sock < 0) {
-            ESP_LOGW(TAG, "⚠️ No active client socket");
+        if (camera_sock < 0) {
+            ESP_LOGW(TAG, "No active client socket");
             vTaskDelay(pdMS_TO_TICKS(500));
             continue;
         }
@@ -38,17 +38,17 @@ void camera_task(void *param) {
     
         // Send frame size first
         uint32_t len = fb->len;
-        int res = send(global_sock, &len, sizeof(len), 0);
+        int res = send(camera_sock, &len, sizeof(len), 0);
         if (res <= 0) {
             ESP_LOGE(TAG, "Failed to send frame length (%u bytes). Error: %d", (unsigned int)len, errno);
-            global_sock = -1;
+            camera_sock = -1;
             esp_camera_fb_return(fb);
             continue;
         }
     
-        res = send(global_sock, fb->buf, fb->len, 0);
-        ESP_LOGI(TAG, "📸 Captured frame (%u bytes)", fb->len);
-        ESP_LOGI(TAG, "🔁 Sent frame length: %u (res=%d)", (unsigned int)len, res);
+        res = send(camera_sock, fb->buf, fb->len, 0);
+        ESP_LOGI(TAG, "Captured frame (%u bytes)", fb->len);
+        ESP_LOGI(TAG, "Sent frame length: %u (res=%d)", (unsigned int)len, res);
     
         if (res <= 0) {
             ESP_LOGE(TAG, "Failed to send frame buffer (%u bytes). Error: %d", (unsigned int)len, errno);

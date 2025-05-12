@@ -13,6 +13,8 @@
     "files.associations": {
         "camera_config.h": "c",
         "string.h": "c",
-        "freertos.h": "c"
+        "freertos.h": "c",
+        "websocket_server.h": "c",
+        "esp_http_server.h": "c"
     }
 }

@@ -3,8 +3,9 @@ idf_component_register(
     "main.c" 
     
     "uart_comm.c" "uart_task.c" 
-    "camera_config.c" "camera_task.c" "tcp_camera_stream_task.c"
-    "tcp_server_task.c"
+    "camera_config.c" "camera_task.c" 
+    "websocket_server.c" "camera_httpd.c"
+   
     
     INCLUDE_DIRS "." "include" 
     REQUIRES 
@@ -18,5 +19,6 @@ idf_component_register(
         freertos
         esp_psram
         lwip
+        esp_http_server
 )
 

@@ -10,13 +10,14 @@
 #include "lwip/ip4_addr.h"
 #include "esp_mac.h"
 #include "esp_system.h"
+#include "esp_http_server.h"
 
-#include "./include/tcp_server_task.h"
+#include "./include/camera_httpd.h"
 #include "./include/camera_config.h"
 #include "./include/camera_task.h"
 #include "./include/uart_comm.h"
 #include "./include/uart_task.h"
-#include "./include/tcp_camera_stream_task.h"
+#include "./include/websocket_server.h"
 
 #ifndef CONFIG_LOG_MAXIMUM_LEVEL
 #define CONFIG_LOG_MAXIMUM_LEVEL ESP_LOG_VERBOSE
@@ -39,21 +40,31 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         wifi_event_sta_disconnected_t* disconn = (wifi_event_sta_disconnected_t*) event_data;
         ESP_LOGW(TAG, "WiFi disconnected. Reason: %d", disconn->reason);
         esp_wifi_connect(); // Retry
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+    }else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "IP Address: " IPSTR, IP2STR(&event->ip_info.ip));
         ESP_LOGI(TAG, "Gateway: " IPSTR, IP2STR(&event->ip_info.gw));
         ESP_LOGI(TAG, "Netmask: " IPSTR, IP2STR(&event->ip_info.netmask));
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "IP Address: " IPSTR, IP2STR(&event->ip_info.ip));
     
-        //  Start TCP server  (ONLY after IP is obtained)
         static bool server_started = false;
         if (!server_started) {
             server_started = true;
-            xTaskCreatePinnedToCore(tcp_server_task, "TCP Server", 8192, NULL, 5, NULL, 1);
-            xTaskCreatePinnedToCore(tcp_camera_stream_task, "TCP Camera Stream", 8192, NULL, 5, NULL, 1);
+
+            if (init_camera() != ESP_OK) {
+                ESP_LOGE(TAG, "Camera init failed. Aborting server startup.");
+                return;  // Or optionally just skip the server startup
+            }
+        
+
+             // Start HTTP server with MJPEG streaming
+            httpd_handle_t httpd = start_camera_httpd();
+
+             // Reuse the same HTTP server to attach WebSocket handler
+            if (httpd != NULL) {
+                start_websocket_server(httpd);
+            } else {
+                ESP_LOGE(TAG, "Failed to start shared HTTP server");
+            }
         }
     }
 }
@@ -84,6 +95,7 @@ void wifi_init_sta(void) {
     esp_wifi_set_mode(WIFI_MODE_STA);
     esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
     esp_wifi_start();
+    esp_wifi_set_ps(WIFI_PS_NONE); 
 
     // Print MAC address
     uint8_t mac[6];
@@ -104,7 +116,11 @@ void app_main(void) {
     wifi_init_sta();
     uart_init();
 
-    xTaskCreatePinnedToCore(uart_task, "UART Task", 4096, NULL, 5, NULL, 0);
-    xTaskCreatePinnedToCore(camera_task, "Camera Task", 8192, NULL, 5, NULL, 1);  
+    xTaskCreatePinnedToCore(uart_task, "UART Task", 4096, NULL, 10, NULL, 1);
+ //   xTaskCreatePinnedToCore(camera_task, "Camera Task", 8192, NULL, 5, NULL, 1);  
+    ESP_LOGI("MAIN: HEAP", "Free heap: %u, internal: %u, PSRAM: %u",
+        (unsigned int)esp_get_free_heap_size(),
+        (unsigned int) heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+        (unsigned int)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
 }

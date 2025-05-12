@@ -37,7 +37,15 @@ void setup() {
   }
 
   sg90.attach(SERVO_PIN);
-  sg90.write(90);
+  sg90.write(180);
+}
+
+void sendStructuredData(uint16_t vl53, uint16_t hc1, uint16_t hc2, uint16_t hc3) {
+  String payload = "{";
+  payload += "\"vl53\":" + String(vl53) + ",";
+  payload += "\"ultrasonic\":[" + String(hc1) + "," + String(hc2) + "," + String(hc3) + "]";
+  payload += "}";
+  Serial1.println(payload);
 }
 
 void logData(const String& msg) {
@@ -67,34 +75,69 @@ void checkSerial1Commands(){
 }
 
 void loop() {
+  static String input = "";
+  unsigned long start = millis();
 
-  checkSerial1Commands(); // read tcp -> uart
+  // === 1. Handle incoming UART commands ===
+  while (Serial1.available()) {
+    char c = Serial1.read();
 
-  // VL53L0X reading
+    if (c == '\n' || c == '\r') {
+      input.trim();
+
+      if (input.length() > 0) {
+        if (input.startsWith("SERVO")) {
+          int angle = input.substring(6).toInt();
+          angle = constrain(angle, 0, 180);
+          sg90.write(angle);
+        } else {
+          Serial1.println("{\"error\":\"Unknown command: " + input + "\"}");
+        }
+      }
+
+      input = "";
+    } else {
+      input += c;
+    }
+  }
+
+  // === 2. Read VL53L0X sensor ===
+  uint16_t vl53_val = 0xFFFF;
   VL53L0X_RangingMeasurementData_t measure;
   lox.rangingTest(&measure, false);
   if (measure.RangeStatus != 4) {
-    logData("VL53L0X  (mm): " + String(measure.RangeMilliMeter));
-  } else {
-    logData("VL53L0X  (mm): Izvan dometa");
+    vl53_val = measure.RangeMilliMeter;
   }
 
-  // HC-SR04 readings
-  for (int i = 0; i < 3; i++) {
-    long duration, distance;
+  // === 3. Read 3x HC-SR04 ===
+  long distances[3] = {0};
 
+  for (int i = 0; i < 3; i++) {
     digitalWrite(trigPins[i], LOW);
     delayMicroseconds(2);
     digitalWrite(trigPins[i], HIGH);
     delayMicroseconds(10);
     digitalWrite(trigPins[i], LOW);
 
-    duration = pulseIn(echoPins[i], HIGH);
-    distance = duration * 0.034 / 2;
-
-    logData("HC-SR04 #" + String(i + 1) + " (cm): " + String(distance));
+    long duration = pulseIn(echoPins[i], HIGH, 20000);  // timeout 20ms
+    distances[i] = duration * 0.034 / 2;
   }
 
-  logData("-------------------------------");
-  delay(500);
+  // === 4. Send JSON over UART ===
+  String payload = "{";
+  payload += "\"status\":\"alive\",";
+  payload += "\"vl53\":" + String(vl53_val) + ",";
+  payload += "\"ultrasonic\":[" + String(distances[0]) + "," + String(distances[1]) + "," + String(distances[2]) + "]";
+  payload += "}";
+
+  Serial1.println(payload);
+  Serial1.flush();  // ensure it's fully sent
+
+  // === 5. Wait to maintain 100ms loop ===
+  unsigned long elapsed = millis() - start;
+  if (elapsed < 100) {
+    delay(100 - elapsed);
+  }
 }
+
+

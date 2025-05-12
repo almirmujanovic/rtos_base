@@ -6,8 +6,8 @@
 #include "freertos/queue.h"
 
 #define UART_PORT UART_NUM_1
-#define UART_TX_PIN 17
-#define UART_RX_PIN 18
+#define UART_TX_PIN 21
+#define UART_RX_PIN 20
 #define UART_BAUD_RATE 115200
 
 static const char *TAG = "UART_COMM";
@@ -36,11 +36,23 @@ void uart_send_line(const char *data) {
 }
 
 int uart_read_line(char *buf, int max_len) {
-    int len = uart_read_bytes(UART_PORT, (uint8_t *)buf, max_len, pdMS_TO_TICKS(100));
-    if (len > 0) {
-        buf[len] = '\0';
-        ESP_LOGI(TAG, "UART received: %s", buf);
-        return len;
+    int idx = 0;
+    while (idx < max_len - 1) {
+        uint8_t byte;
+        int len = uart_read_bytes(UART_PORT, &byte, 1, pdMS_TO_TICKS(20));  // small timeout
+        if (len > 0) {
+            if (byte == '\n') {
+                break;  // end of line
+            } else if (byte != '\r') {
+                buf[idx++] = byte;
+            }
+        } else {
+            // timeout with no data
+            break;
+        }
     }
-    return 0;
+
+    buf[idx] = '\0';  // null-terminate
+    return idx;
 }
+

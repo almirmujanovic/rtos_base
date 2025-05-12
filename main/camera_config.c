@@ -52,9 +52,9 @@ esp_err_t init_camera(void) {
         .ledc_channel   = LEDC_CHANNEL_0,
 
         .pixel_format   = PIXFORMAT_JPEG,     // better for transmission
-        .frame_size     = FRAMESIZE_VGA,     // 320x240 (can go higher if needed)
+        .frame_size     = FRAMESIZE_QVGA,     
         .jpeg_quality   = 12,                 // 0-63 (lower = better quality)
-        .fb_count       = 2,
+        .fb_count       = 1,
         .grab_mode      = CAMERA_GRAB_LATEST
     };
 

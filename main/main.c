@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -11,7 +12,9 @@
 #include "esp_mac.h"
 #include "esp_system.h"
 #include "esp_http_server.h"
+#include "mqtt_client.h"
 
+#include "mqtt_uart_bridge.h"
 #include "./include/camera_httpd.h"
 #include "./include/camera_config.h"
 #include "./include/camera_task.h"
@@ -24,6 +27,7 @@
 #endif
 
 static const char *TAG = "MAIN";
+
 
 // Replace with your WiFi credentials
 #define WIFI_SSID "MojaTV_Full_352765"
@@ -55,7 +59,6 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                 return;  // Or optionally just skip the server startup
             }
         
-
              // Start HTTP server with MJPEG streaming
             httpd_handle_t httpd = start_camera_httpd();
 
@@ -65,6 +68,8 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             } else {
                 ESP_LOGE(TAG, "Failed to start shared HTTP server");
             }
+
+            mqtt_app_start();
         }
     }
 }
@@ -104,6 +109,10 @@ void wifi_init_sta(void) {
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
+#define log_error_if_nonzero(message, ret) \
+    if ((ret) != 0) { \
+        ESP_LOGE(TAG, "Last error %s: 0x%x", message, ret); \
+    }
 
 
 void app_main(void) {
@@ -122,5 +131,23 @@ void app_main(void) {
         (unsigned int)esp_get_free_heap_size(),
         (unsigned int) heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
         (unsigned int)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+
+    ESP_LOGI(TAG, "[APP] Startup..");
+    ESP_LOGI(TAG, "[APP] Free memory: %" PRId32 " bytes", (int32_t) esp_get_free_heap_size());    
+    ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
+
+    esp_log_level_set("*", ESP_LOG_INFO);
+    esp_log_level_set("MQTT_CLIENT", ESP_LOG_VERBOSE);
+    esp_log_level_set("MQTT_EXAMPLE", ESP_LOG_VERBOSE);
+    esp_log_level_set("TRANSPORT_BASE", ESP_LOG_VERBOSE);
+    esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
+    esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
+    esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
+
+    /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
+     * Read "Establishing Wi-Fi or Ethernet Connection" section in
+     * examples/protocols/README.md for more information about this function.
+     */
+
 
 }

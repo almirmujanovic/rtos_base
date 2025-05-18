@@ -6,3 +6,11 @@ cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(rtos_base)
+
+set(EXTRA_COMPONENT_DIRS "")
+set(COMPONENT_EMBED_TXTFILES "")
+set(COMPONENT_REQUIRES "")
+set(COMPONENT_PRIV_REQUIRES "")
+
+add_compile_definitions(-DMBEDTLS_CONFIG_FILE="mbedtls/esp_config.h")
+add_compile_definitions(-DMBEDTLS_NO_TLS=1)

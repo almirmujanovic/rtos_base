@@ -5,6 +5,8 @@
 #include "esp_log.h"
 #include <string.h>
 #include "./include/websocket_server.h"
+#include "mqtt_uart_bridge.h"
+
 #define LOG_LOCAL_LEVEL ESP_LOG_INFO
 static const char *TAG = "UART_TASK";
 
@@ -22,7 +24,9 @@ void uart_task(void *pvParameters) {
             while (line != NULL) {
                 if (strlen(line) > 1) {
                     ESP_LOGI(TAG, "UART Received: %s", line);
-                    websocket_send_to_pc(line);
+                    mqtt_publish_uart_data(line);  // Send to PC via MQTT
+                    //websocket_send_to_pc(line);    // Optional: keep WS too
+
                     ESP_LOGI("HEAP", "Free heap: %d", (int)esp_get_free_heap_size());
                 }
                 line = strtok(NULL, "\r\n");

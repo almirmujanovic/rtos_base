@@ -5,6 +5,7 @@ idf_component_register(
     "uart_comm.c" "uart_task.c" 
     "camera_config.c" "camera_task.c" 
     "websocket_server.c" "camera_httpd.c"
+    "mqtt_uart_bridge.c" 
    
     
     INCLUDE_DIRS "." "include" 
@@ -20,5 +21,6 @@ idf_component_register(
         esp_psram
         lwip
         esp_http_server
+        mqtt
 )
 

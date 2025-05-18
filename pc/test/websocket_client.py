@@ -32,8 +32,8 @@ def create_socket():
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
     wst = threading.Thread(target=lambda: ws.run_forever(
-        ping_interval=20,
-        ping_timeout=10,
+        ping_interval=15,
+        ping_timeout=5,
         sslopt={"cert_reqs": 0},
         sockopt=[(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)],
         dispatcher=None,

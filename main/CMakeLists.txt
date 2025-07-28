@@ -3,8 +3,7 @@ idf_component_register(
     "main.c" 
     
     "uart_comm.c" "uart_task.c" 
-    "camera_config.c" "camera_task.c" 
-    "websocket_server.c" "camera_httpd.c"
+    "camera_config.c" "camera_udp_task.c"
     "mqtt_uart_bridge.c" 
    
     

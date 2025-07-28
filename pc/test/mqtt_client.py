@@ -1,6 +1,6 @@
 import paho.mqtt.client as mqtt
 
-BROKER_IP = "192.168.1.9"  # Your PC IP
+BROKER_IP = "192.168.1.87"  # Your PC IP
 TOPIC_DATA = "/robot/sensors"
 TOPIC_COMMAND = "/robot/commands"
 

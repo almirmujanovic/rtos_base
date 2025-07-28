@@ -15,12 +15,10 @@
 #include "mqtt_client.h"
 
 #include "mqtt_uart_bridge.h"
-#include "./include/camera_httpd.h"
 #include "./include/camera_config.h"
-#include "./include/camera_task.h"
+#include "./include/camera_udp_task.h"
 #include "./include/uart_comm.h"
 #include "./include/uart_task.h"
-#include "./include/websocket_server.h"
 
 #ifndef CONFIG_LOG_MAXIMUM_LEVEL
 #define CONFIG_LOG_MAXIMUM_LEVEL ESP_LOG_VERBOSE
@@ -29,9 +27,9 @@
 static const char *TAG = "MAIN";
 
 
-// Replace with your WiFi credentials
-#define WIFI_SSID "MojaTV_Full_352765"
-#define WIFI_PASS "almir2002"
+// WiFi credentials
+#define WIFI_SSID "THINKPAD 0685"
+#define WIFI_PASS "638\\Yg95"
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                int32_t event_id, void* event_data) {
@@ -50,25 +48,28 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "Gateway: " IPSTR, IP2STR(&event->ip_info.gw));
         ESP_LOGI(TAG, "Netmask: " IPSTR, IP2STR(&event->ip_info.netmask));
     
+        ESP_LOGI(TAG, "Testing network connectivity...");
+
         static bool server_started = false;
         if (!server_started) {
             server_started = true;
-
+/* 
             if (init_camera() != ESP_OK) {
                 ESP_LOGE(TAG, "Camera init failed. Aborting server startup.");
                 return;  // Or optionally just skip the server startup
             }
         
              // Start HTTP server with MJPEG streaming
-            httpd_handle_t httpd = start_camera_httpd();
+           httpd_handle_t httpd = start_camera_httpd();
 
              // Reuse the same HTTP server to attach WebSocket handler
             if (httpd != NULL) {
                 start_websocket_server(httpd);
             } else {
                 ESP_LOGE(TAG, "Failed to start shared HTTP server");
-            }
-
+            }*/
+            ESP_LOGI(TAG, "Waiting 2 seconds before starting MQTT...");
+            vTaskDelay(pdMS_TO_TICKS(2000)); // Wait 2 seconds
             mqtt_app_start();
         }
     }
@@ -86,14 +87,9 @@ void wifi_init_sta(void) {
     esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, NULL);
 
     wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = WIFI_SSID,
-            .password = WIFI_PASS,
-            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-            .pmf_cfg = {
-                .capable = true,
-                .required = false,
-            },
+    .sta = {
+        .ssid = WIFI_SSID,
+        .password = WIFI_PASS,
         },
     };
 
@@ -101,12 +97,6 @@ void wifi_init_sta(void) {
     esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
     esp_wifi_start();
     esp_wifi_set_ps(WIFI_PS_NONE); 
-
-    // Print MAC address
-    uint8_t mac[6];
-    esp_read_mac(mac, ESP_MAC_WIFI_STA);
-    ESP_LOGI(TAG, "MAC Address: %02X:%02X:%02X:%02X:%02X:%02X",
-             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
 #define log_error_if_nonzero(message, ret) \
@@ -124,30 +114,37 @@ void app_main(void) {
     }
     wifi_init_sta();
     uart_init();
+    /*
+    if (init_camera() != ESP_OK) {
+        ESP_LOGE(TAG, "Camera init failed. Halting app.");
+        return; // Don't start camera task if init fails
+    }
+*/
+    xTaskCreatePinnedToCore(uart_task, "UART Task", 4096, NULL, 15, NULL, 1);
+   // xTaskCreatePinnedToCore(camera_udp_task, "UDP Camera Task", 8192, NULL, 5, NULL, 1);  
 
-    xTaskCreatePinnedToCore(uart_task, "UART Task", 4096, NULL, 10, NULL, 1);
- //   xTaskCreatePinnedToCore(camera_task, "Camera Task", 8192, NULL, 5, NULL, 1);  
     ESP_LOGI("MAIN: HEAP", "Free heap: %u, internal: %u, PSRAM: %u",
         (unsigned int)esp_get_free_heap_size(),
-        (unsigned int) heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+        (unsigned int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
         (unsigned int)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
     ESP_LOGI(TAG, "[APP] Startup..");
     ESP_LOGI(TAG, "[APP] Free memory: %" PRId32 " bytes", (int32_t) esp_get_free_heap_size());    
     ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
 
-    esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("MQTT_CLIENT", ESP_LOG_VERBOSE);
-    esp_log_level_set("MQTT_EXAMPLE", ESP_LOG_VERBOSE);
-    esp_log_level_set("TRANSPORT_BASE", ESP_LOG_VERBOSE);
-    esp_log_level_set("esp-tls", ESP_LOG_VERBOSE);
-    esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
-    esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
+    esp_log_level_set("*", ESP_LOG_WARN);           // Only warnings and errors
+    esp_log_level_set("MAIN", ESP_LOG_INFO);        // Keep main info
+    esp_log_level_set("MQTT_UART", ESP_LOG_INFO);   // Keep MQTT info
+    esp_log_level_set("UART_TASK", ESP_LOG_WARN);
 
-    /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
+    esp_log_level_set("MQTT_CLIENT", ESP_LOG_WARN);
+    esp_log_level_set("TRANSPORT_BASE", ESP_LOG_WARN);
+    esp_log_level_set("esp-tls", ESP_LOG_WARN);
+
+    /*
+     This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
      * examples/protocols/README.md for more information about this function.
      */
-
 
 }

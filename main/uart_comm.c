@@ -6,8 +6,8 @@
 #include "freertos/queue.h"
 
 #define UART_PORT UART_NUM_1
-#define UART_TX_PIN 21
-#define UART_RX_PIN 20
+#define UART_TX_PIN 20
+#define UART_RX_PIN 21
 #define UART_BAUD_RATE 115200
 
 static const char *TAG = "UART_COMM";

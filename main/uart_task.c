@@ -23,18 +23,15 @@ void uart_task(void *pvParameters) {
             char *line = strtok(rx_buffer, "\r\n");
             while (line != NULL) {
                 if (strlen(line) > 1) {
-                    ESP_LOGI(TAG, "UART Received: %s", line);
-                    mqtt_publish_uart_data(line);  // Send to PC via MQTT
-                    //websocket_send_to_pc(line);    // Optional: keep WS too
-
-                    ESP_LOGI("HEAP", "Free heap: %d", (int)esp_get_free_heap_size());
+                    ESP_LOGD(TAG, "UART Received: %s", line);
+                    mqtt_publish_uart_data(line);  
                 }
                 line = strtok(NULL, "\r\n");
             }
         }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(10));  // Keep polling fast
+    vTaskDelay(pdMS_TO_TICKS(5));  //  fast
 }
 
 }

@@ -4,7 +4,6 @@
 #include "./include/uart_task.h"
 #include "esp_log.h"
 #include <string.h>
-#include "./include/websocket_server.h"
 #include "mqtt_uart_bridge.h"
 
 #define LOG_LOCAL_LEVEL ESP_LOG_INFO

@@ -49,7 +49,7 @@ esp_err_t init_camera(void) {
     config.pin_pwdn = PWDN_GPIO_NUM;
     config.pin_reset = RESET_GPIO_NUM;
     config.xclk_freq_hz = 20000000; // Reduce from 20MHz if unstable
-    config.frame_size = FRAMESIZE_QVGA; // Start with VGA instead of higher res
+    config.frame_size = FRAMESIZE_VGA; // Start with VGA instead of higher res
     config.pixel_format = PIXFORMAT_JPEG;
     config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
     config.fb_location = CAMERA_FB_IN_PSRAM;
@@ -92,4 +92,5 @@ esp_err_t init_camera(void) {
 
     ESP_LOGI("CAMERA", "Camera initialized successfully");
     return ESP_OK;
+    
 }

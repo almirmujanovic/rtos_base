@@ -47,9 +47,9 @@ esp_err_t rtsp_server_init(void) {
         // Always bind to 0.0.0.0 so lwIP can handle SYN queue on all ifaces
         ESP_LOGI(TAG, "Initializing RTSP server on all interfaces");
         espp::RtspServer::Config cfg;
-        cfg.server_address = "192.168.137.1";          // bind on all interfaces
+        cfg.server_address = "0.0.0.0";
         cfg.port           = 8554;               // default RTSP port
-        cfg.path           = "/mjpeg/1";         // your MJPEG path
+        cfg.path           = "/mjpeg/1";         //  MJPEG path
         cfg.max_data_size  = 1200;               // cap each UDP packet < MTU
         cfg.log_level      = espp::Logger::Verbosity::INFO;
         rtsp_server = std::make_unique<espp::RtspServer>(cfg);
@@ -112,10 +112,10 @@ void rtsp_camera_stream_task(void *param) {
                         (unsigned long)frame_count, fb->width, fb->height, fb->len);
                 }
                 esp_camera_fb_return(fb);
-                vTaskDelay(pdMS_TO_TICKS(100));
+                vTaskDelay(pdMS_TO_TICKS(50));
             } else {
                 ESP_LOGW(TAG, "Camera capture failed");
-                vTaskDelay(pdMS_TO_TICKS(100));
+                vTaskDelay(pdMS_TO_TICKS(50));
             }
         } else {
             vTaskDelay(pdMS_TO_TICKS(1000));

@@ -74,6 +74,6 @@ void camera_task(void *param) {
         }
 
         esp_camera_fb_return(fb);
-        vTaskDelay(pdMS_TO_TICKS(30));  // ~10 FPS
+        //vTaskDelay(pdMS_TO_TICKS(10));  
     }
 }

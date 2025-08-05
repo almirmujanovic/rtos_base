@@ -56,31 +56,33 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "Netmask: " IPSTR, IP2STR(&event->ip_info.netmask));
         ESP_LOGI(TAG, "Testing network connectivity...");
 
-       // Fix this section (around line 70):
-static bool server_started = false;
+        static bool server_started = false;
 
-if (!server_started) {
-    server_started = true;
+        if (!server_started) {
+            server_started = true;
 
-    if (init_camera() != ESP_OK) {
-        ESP_LOGE(TAG, "Camera init failed. Aborting server startup.");
-        return;
-    }
-    
-    if (rtsp_server_init() == ESP_OK) {
-        if (rtsp_server_start() == ESP_OK) {
-            xTaskCreatePinnedToCore(rtsp_camera_stream_task, "rtsp_stream", 
-                                    24*1024, NULL, configMAX_PRIORITIES-1, NULL, 1);
-            ESP_LOGI(TAG, "RTSP server started successfully");
-        } else {
-            ESP_LOGE(TAG, "Failed to start RTSP server");
+            uart_init();
+            xTaskCreatePinnedToCore(uart_task, "UART task", 4096, NULL, 15, NULL, 1);
+
+            if (init_camera() != ESP_OK) {
+                ESP_LOGE(TAG, "Camera init failed. Aborting server startup.");
+                return;
+            }
+            
+            if (rtsp_server_init() == ESP_OK) {
+                if (rtsp_server_start() == ESP_OK) {
+                    xTaskCreatePinnedToCore(rtsp_camera_stream_task, "rtsp_stream", 
+                                            12*1024, NULL, 3, NULL, 1);
+                    ESP_LOGI(TAG, "RTSP server started successfully");
+                } else {
+                    ESP_LOGE(TAG, "Failed to start RTSP server");
+                }
+            } else {
+                ESP_LOGE(TAG, "Failed to initialize RTSP server");
+            }
+            mqtt_app_start(); // Start MQTT client
+
         }
-    } else {
-        ESP_LOGE(TAG, "Failed to initialize RTSP server");
-    }
-}
-// Remove the extra closing braces that are causing syntax errors
-    
     }
 }
 
@@ -115,7 +117,7 @@ void app_main(void) {
         ESP_ERROR_CHECK(nvs_flash_init());
     }
     wifi_init_sta();
-
+    
     ESP_LOGI("MAIN: HEAP", "Free heap: %u, internal: %u, PSRAM: %u",
         (unsigned int)esp_get_free_heap_size(),
         (unsigned int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),

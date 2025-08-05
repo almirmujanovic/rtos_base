@@ -53,8 +53,8 @@ esp_err_t init_camera(void) {
     config.pixel_format = PIXFORMAT_JPEG;
     config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
     config.fb_location = CAMERA_FB_IN_PSRAM;
-    config.jpeg_quality = 25; // Lower number = better quality but bigger files
-    config.fb_count = 2; // Reduce buffer count for stability
+    config.jpeg_quality = 10; // Lower number = better quality but bigger files
+    config.fb_count = 3; // Reduce buffer count for stability
 
     // Initialize camera
     esp_err_t err = esp_camera_init(&config);

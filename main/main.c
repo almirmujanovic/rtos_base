@@ -35,6 +35,8 @@ static const char *TAG = "MAIN";
 #endif
 
 // WiFi credentials
+//#define WIFI_SSID "MojaTV_Full_352765"
+//#define WIFI_PASS "almir2002"
 #define WIFI_SSID "THINKPAD 0685"
 #define WIFI_PASS "638\\Yg95"
 
@@ -61,8 +63,8 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         if (!server_started) {
             server_started = true;
 
-            uart_init();
-            xTaskCreatePinnedToCore(uart_task, "UART task", 4096, NULL, 15, NULL, 1);
+           // uart_init();
+           // xTaskCreatePinnedToCore(uart_task, "UART task", 4096, NULL, 15, NULL, 1);
 
             if (init_camera() != ESP_OK) {
                 ESP_LOGE(TAG, "Camera init failed. Aborting server startup.");
@@ -72,7 +74,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             if (rtsp_server_init() == ESP_OK) {
                 if (rtsp_server_start() == ESP_OK) {
                     xTaskCreatePinnedToCore(rtsp_camera_stream_task, "rtsp_stream", 
-                                            12*1024, NULL, 3, NULL, 1);
+                                            10*1024, NULL, 10, NULL, 1);
                     ESP_LOGI(TAG, "RTSP server started successfully");
                 } else {
                     ESP_LOGE(TAG, "Failed to start RTSP server");
@@ -80,7 +82,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             } else {
                 ESP_LOGE(TAG, "Failed to initialize RTSP server");
             }
-            mqtt_app_start(); // Start MQTT client
+           // mqtt_app_start(); // Start MQTT client
 
         }
     }
@@ -108,6 +110,8 @@ void wifi_init_sta(void) {
     esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
     esp_wifi_start();
     esp_wifi_set_ps(WIFI_PS_NONE); 
+    esp_wifi_set_bandwidth(WIFI_IF_STA, WIFI_BW_HT40);
+    esp_wifi_set_max_tx_power(78);
 }
 
 void app_main(void) {

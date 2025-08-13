@@ -1,14 +1,10 @@
-#include "./include/camera_config.h"
+#include "camera_config.h"
 #include "esp_camera.h"
 #include "esp_log.h"
 
-#ifndef CONFIG_LOG_MAXIMUM_LEVEL
-#define CONFIG_LOG_MAXIMUM_LEVEL ESP_LOG_VERBOSE
-#endif
+static const char *TAG = "CAMERA_CONFIG";
 
-#define TAG "CAMERA_CONFIG"
-
-// Pin configuration for Freenove ESP32S3 module (CAMERA_MODEL_ESP32S3_EYE)
+// Freenove ESP32-S3 Eye pin mapping
 #define PWDN_GPIO_NUM     -1
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM     15
@@ -29,68 +25,56 @@
 #define PCLK_GPIO_NUM     13
 
 esp_err_t init_camera(void) {
-    camera_config_t config;
-    config.ledc_channel = LEDC_CHANNEL_0;
-    config.ledc_timer = LEDC_TIMER_0;
-    config.pin_d0 = Y2_GPIO_NUM;
-    config.pin_d1 = Y3_GPIO_NUM;
-    config.pin_d2 = Y4_GPIO_NUM;
-    config.pin_d3 = Y5_GPIO_NUM;
-    config.pin_d4 = Y6_GPIO_NUM;
-    config.pin_d5 = Y7_GPIO_NUM;
-    config.pin_d6 = Y8_GPIO_NUM;
-    config.pin_d7 = Y9_GPIO_NUM;
-    config.pin_xclk = XCLK_GPIO_NUM;
-    config.pin_pclk = PCLK_GPIO_NUM;
-    config.pin_vsync = VSYNC_GPIO_NUM;
-    config.pin_href = HREF_GPIO_NUM;
-    config.pin_sccb_sda = SIOD_GPIO_NUM;
-    config.pin_sccb_scl = SIOC_GPIO_NUM;
-    config.pin_pwdn = PWDN_GPIO_NUM;
-    config.pin_reset = RESET_GPIO_NUM;
-    config.xclk_freq_hz = 20000000; // Reduce from 20MHz if unstable
-    config.frame_size = FRAMESIZE_VGA; // Start with VGA instead of higher res
-    config.pixel_format = PIXFORMAT_JPEG;
-    config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-    config.fb_location = CAMERA_FB_IN_PSRAM;
-    config.jpeg_quality = 10; // Lower number = better quality but bigger files
-    config.fb_count = 3; // Reduce buffer count for stability
+    camera_config_t config = {
+        .pin_pwdn       = PWDN_GPIO_NUM,
+        .pin_reset      = RESET_GPIO_NUM,
+        .pin_xclk       = XCLK_GPIO_NUM,
+        .pin_sccb_sda   = SIOD_GPIO_NUM,
+        .pin_sccb_scl   = SIOC_GPIO_NUM,
 
-    // Initialize camera
+        .pin_d0         = Y2_GPIO_NUM,
+        .pin_d1         = Y3_GPIO_NUM,
+        .pin_d2         = Y4_GPIO_NUM,
+        .pin_d3         = Y5_GPIO_NUM,
+        .pin_d4         = Y6_GPIO_NUM,
+        .pin_d5         = Y7_GPIO_NUM,
+        .pin_d6         = Y8_GPIO_NUM,
+        .pin_d7         = Y9_GPIO_NUM,
+        .pin_vsync      = VSYNC_GPIO_NUM,
+        .pin_href       = HREF_GPIO_NUM,
+        .pin_pclk       = PCLK_GPIO_NUM,
+
+        // Clock config: try 16MHz on ESP32-S3 for EDMA, fallback to 20MHz if needed
+        .xclk_freq_hz   = 20000000,
+        .ledc_timer     = LEDC_TIMER_1,
+        .ledc_channel   = LEDC_CHANNEL_1,
+
+        // Image format / size
+        .pixel_format   = PIXFORMAT_JPEG,    // JPEG is fastest for streaming
+        .frame_size     = FRAMESIZE_VGA,    // Start low; increase after testing stability
+        .jpeg_quality   = 28,                // 10–20 = high quality; higher number = smaller file
+        .fb_count       = 2,                 // 2+ for continuous mode in JPEG
+        .grab_mode      = CAMERA_GRAB_LATEST,
+        .fb_location    = CAMERA_FB_IN_PSRAM // Use PSRAM for frame buffers
+    };
+
     esp_err_t err = esp_camera_init(&config);
     if (err != ESP_OK) {
-        ESP_LOGE("CAMERA", "Camera init failed with error 0x%x", err);
+        ESP_LOGE(TAG, "Camera init failed with error 0x%x", err);
         return err;
     }
 
-    // Get sensor and apply settings for better streaming
-    sensor_t * s = esp_camera_sensor_get();
-    if (s != NULL) {
-        s->set_brightness(s, 0);     // -2 to 2
-        s->set_contrast(s, 0);       // -2 to 2
-        s->set_saturation(s, 0);     // -2 to 2
-        s->set_special_effect(s, 0); // 0 to 6 (0-No Effect, 1-Negative, 2-Grayscale, 3-Red Tint, 4-Green Tint, 5-Blue Tint, 6-Sepia)
-        s->set_whitebal(s, 1);       // 0 = disable , 1 = enable
-        s->set_awb_gain(s, 1);       // 0 = disable , 1 = enable
-        s->set_wb_mode(s, 0);        // 0 to 4 - if awb_gain enabled (0 - Auto, 1 - Sunny, 2 - Cloudy, 3 - Office, 4 - Home)
-        s->set_exposure_ctrl(s, 1);  // 0 = disable , 1 = enable
-        s->set_aec2(s, 0);           // 0 = disable , 1 = enable
-        s->set_ae_level(s, 0);       // -2 to 2
-        s->set_aec_value(s, 300);    // 0 to 1200
-        s->set_gain_ctrl(s, 1);      // 0 = disable , 1 = enable
-        s->set_agc_gain(s, 0);       // 0 to 30
-        s->set_gainceiling(s, (gainceiling_t)0);  // 0 to 6
-        s->set_bpc(s, 0);            // 0 = disable , 1 = enable
-        s->set_wpc(s, 1);            // 0 = disable , 1 = enable
-        s->set_raw_gma(s, 1);        // 0 = disable , 1 = enable
-        s->set_lenc(s, 1);           // 0 = disable , 1 = enable
-        s->set_hmirror(s, 0);        // 0 = disable , 1 = enable
-        s->set_vflip(s, 0);          // 0 = disable , 1 = enable
-        s->set_dcw(s, 1);            // 0 = disable , 1 = enable
-        s->set_colorbar(s, 0);       // 0 = disable , 1 = enable
+    // Sensor tuning
+    sensor_t *s = esp_camera_sensor_get();
+    if (s) {
+        s->set_framesize(s, FRAMESIZE_VGA); // Match config
+        s->set_quality(s, 28);               // Lower = better quality (0=best, 63=worst)
+        s->set_saturation(s, -2);
+        s->set_sharpness(s, -2);
+        s->set_denoise(s, 2);
+        s->set_vflip(s, 1);                   // Flip if image is upside-down
     }
 
-    ESP_LOGI("CAMERA", "Camera initialized successfully");
+    ESP_LOGI(TAG, "Camera initialized successfully");
     return ESP_OK;
-    
 }

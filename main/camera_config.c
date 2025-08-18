@@ -52,8 +52,8 @@ esp_err_t init_camera(void) {
         // Image format / size
         .pixel_format   = PIXFORMAT_JPEG,    // JPEG is fastest for streaming
         .frame_size     = FRAMESIZE_VGA,    // Start low; increase after testing stability
-        .jpeg_quality   = 28,                // 10–20 = high quality; higher number = smaller file
-        .fb_count       = 2,                 // 2+ for continuous mode in JPEG
+        .jpeg_quality   = 35,                // 10–20 = high quality; higher number = smaller file
+        .fb_count       = 1,                 // 2+ for continuous mode in JPEG
         .grab_mode      = CAMERA_GRAB_LATEST,
         .fb_location    = CAMERA_FB_IN_PSRAM // Use PSRAM for frame buffers
     };
@@ -67,9 +67,8 @@ esp_err_t init_camera(void) {
     // Sensor tuning
     sensor_t *s = esp_camera_sensor_get();
     if (s) {
-        s->set_framesize(s, FRAMESIZE_VGA); // Match config
-        s->set_quality(s, 28);               // Lower = better quality (0=best, 63=worst)
-        s->set_saturation(s, -2);
+        s->set_framesize(s, FRAMESIZE_VGA); // Match config              // Lower = better quality (0=best, 63=worst)
+        s->set_saturation(s, -1);
         s->set_sharpness(s, -2);
         s->set_denoise(s, 2);
         s->set_vflip(s, 1);                   // Flip if image is upside-down

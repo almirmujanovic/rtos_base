@@ -35,10 +35,10 @@ static const char *TAG = "MAIN";
 #endif
 
 // WiFi credentials
-//#define WIFI_SSID "MojaTV_Full_352765"
-//#define WIFI_PASS "almir2002"
-#define WIFI_SSID "THINKPAD 0685"
-#define WIFI_PASS "638\\Yg95"
+#define WIFI_SSID "MojaTV_Full_352765"
+#define WIFI_PASS "almir2002"
+//#define WIFI_SSID "THINKPAD 0685"
+//#define WIFI_PASS "638\\Yg95"
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                int32_t event_id, void* event_data) {
@@ -74,7 +74,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             if (rtsp_server_init() == ESP_OK) {
                 if (rtsp_server_start() == ESP_OK) {
                     xTaskCreatePinnedToCore(rtsp_camera_stream_task, "rtsp_stream", 
-                                            10*1024, NULL, 10, NULL, 1);
+                                            6*1024, NULL, 20, NULL, 1);
                     ESP_LOGI(TAG, "RTSP server started successfully");
                 } else {
                     ESP_LOGE(TAG, "Failed to start RTSP server");

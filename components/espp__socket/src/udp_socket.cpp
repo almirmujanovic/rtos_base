@@ -6,6 +6,31 @@
 
 using namespace espp;
 
+// --- at top of udp_socket.cpp
+#include <atomic>
+#include <errno.h>
+
+static std::atomic<uint32_t> g_send_ok{0};
+static std::atomic<uint32_t> g_send_enomem{0};
+static std::atomic<uint32_t> g_send_enobufs{0};
+static std::atomic<uint32_t> g_send_eagain{0};
+
+extern "C" void udp_get_send_counters(uint32_t* ok, uint32_t* enomem,
+                                      uint32_t* enobufs, uint32_t* eagain,
+                                      bool reset) {
+  if (ok)     *ok     = g_send_ok.load();
+  if (enomem) *enomem = g_send_enomem.load();
+  if (enobufs)*enobufs= g_send_enobufs.load();
+  if (eagain) *eagain = g_send_eagain.load();
+  if (reset) {
+    g_send_ok.store(0);
+    g_send_enomem.store(0);
+    g_send_enobufs.store(0);
+    g_send_eagain.store(0);
+  }
+}
+
+
 // Small helper to set DSCP EF (46 -> TOS 0xB8) so Wi-Fi uses WMM video/voice queue.
 static void set_dscp_ef(int sock, espp::Logger &log) {
   int tos = 0xB8; // DSCP EF (46) << 2

@@ -2,5 +2,5 @@ build/
 sdkconfig
 sdkconfig.old
 # RTSP video recordings
-recordings/*
-!recordings/.gitkeep
+pc/recordings/*
+!pc/recordings/.gitkeep

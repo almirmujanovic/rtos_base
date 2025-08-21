@@ -57,7 +57,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             server_started = true;
 
             uart_init();
-            xTaskCreatePinnedToCore(uart_task, "UART task", 4096, NULL, 15, NULL, 1);
+            xTaskCreatePinnedToCore(uart_task, "UART task", 4096, NULL, 10, NULL, 1);
 
             if (init_camera() != ESP_OK) {
                 ESP_LOGE(TAG, "Camera init failed. Aborting server startup.");
@@ -67,7 +67,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             if (rtsp_server_init() == ESP_OK) {
                 if (rtsp_server_start() == ESP_OK) {
                     xTaskCreatePinnedToCore(rtsp_camera_stream_task, "rtsp_stream", 
-                                            6*1024, NULL, 20, NULL, 1);
+                                            6*1024, NULL, 9, NULL, 1);
                     ESP_LOGI(TAG, "RTSP server started successfully");
                 } else {
                     ESP_LOGE(TAG, "Failed to start RTSP server");

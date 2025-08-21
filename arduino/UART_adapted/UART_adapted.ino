@@ -14,23 +14,23 @@
 // HCSR04 pins (shared trigger)
 #define TRIG_PIN 2
 #define ECHO_PIN_1 A0  // Left
-#define ECHO_PIN_2 A1  // Back  <-- FIXED: swapped
-#define ECHO_PIN_3 A2  // Right <-- FIXED: swapped
+#define ECHO_PIN_2 A1  // Back  
+#define ECHO_PIN_3 A2  // Right 
 
 // Servo pin
 #define SERVO_PIN 6
 
 // Constants
-#define MAX_DISTANCE_CM 200
+#define MAX_DISTANCE_CM 100
 #define OBSTACLE_THRESHOLD_CM 8
 #define SENSOR_TIMEOUT_US (MAX_DISTANCE_CM * 58)
-#define SENSOR_UPDATE_INTERVAL 25
+#define SENSOR_UPDATE_INTERVAL 50  // Reduced to 20Hz for stability
 #define UART_BAUD 115200
 
 #define SERVO_MIN_ANGLE 48
 #define SERVO_MAX_ANGLE 118
 
-#define BAD_READS_THRESHOLD 2  // Immunity to bad reads
+#define BAD_READS_THRESHOLD 2
 
 Servo steeringServo;
 VL53L0X vl53Sensor;
@@ -53,6 +53,7 @@ SensorData sensors = {0};
 MotorControl motors = {0, 90, true};
 unsigned long lastSensorUpdate = 0;
 unsigned long lastCommandTime = 0;
+unsigned long lastSensorSend = 0;
 bool emergencyStop = false;
 bool vl53_initialized = false;
 
@@ -63,43 +64,57 @@ uint8_t bad_right = 0;
 uint8_t bad_back = 0;
 
 void setup() {
-    Serial.begin(UART_BAUD);
-    Serial.println("🤖 Arduino Robot Controller v1.0");
+    // CRITICAL: Initialize Serial1 FIRST before any other Serial operations
     Serial1.begin(UART_BAUD);
-    Serial1.println("STARTUP,Arduino Robot Controller v1.0");
+    delay(100);  // Let UART stabilize
+    
+    Serial.begin(UART_BAUD);
+    Serial.println("🤖 Arduino Robot Controller v1.1");
+    
+    // Send startup message to ESP32
+    Serial1.println("STARTUP,Arduino Robot Controller v1.1");
+    
     initializeMotors();
     steeringServo.attach(SERVO_PIN);
     steeringServo.write(90);
     initializeHCSR04();
     initializeVL53L0X();
+    
     Serial.println("✅ All systems initialized");
     Serial1.println("STATUS,All systems initialized");
+    
     delay(100);
 }
 
 void loop() {
-unsigned long currentTime = millis();
+    unsigned long currentTime = millis();
+    
+    // Process UART commands first (highest priority)
     processUARTCommands();
 
-    // Update sensors at 40Hz
+    // Update sensors at 20Hz (reduced for stability)
     if (currentTime - lastSensorUpdate >= SENSOR_UPDATE_INTERVAL) {
         updateAllSensors();
         lastSensorUpdate = currentTime;
     }
 
-    // Check obstacles every loop for fast recovery
+    // Check obstacles every loop for safety
     checkObstacles();
 
-    // Command timeout: only stop motors, do not set emergencyStop permanently
+    // Command timeout: only stop motors
     if (currentTime - lastCommandTime > 1000 && lastCommandTime > 0) {
         setMotorSpeed(0);
         Serial.println("⚠️ Command timeout - motors stopped");
         Serial1.println("STATUS,Command timeout - motors stopped");
-        // Do NOT set emergencyStop = true here!
     }
 
-    sendSensorData();
-    delay(1);
+    // Send sensor data at 20Hz (matches update rate)
+    if (currentTime - lastSensorSend >= SENSOR_UPDATE_INTERVAL) {
+        sendSensorData();
+        lastSensorSend = currentTime;
+    }
+
+    delay(2);  // Small delay for stability
 }
 
 void initializeMotors() {
@@ -126,46 +141,82 @@ void initializeHCSR04() {
 
 void initializeVL53L0X() {
     Wire.begin();
-    if (!vl53Sensor.init()) {
-        Serial.println("❌ VL53L0X sensor not found");
-        Serial1.println("ERROR,VL53L0X sensor not found");
-        vl53_initialized = false;
-        sensors.vl53_distance = 255;
-        return;
+    vl53_initialized = false;
+    
+    // Try to initialize VL53L0X with retries
+    for (int i = 0; i < 3; i++) {
+        if (vl53Sensor.init()) {
+            vl53Sensor.setTimeout(50);
+            vl53Sensor.setMeasurementTimingBudget(20000);
+            vl53_initialized = true;
+            Serial.println("✅ VL53L0X initialized");
+            Serial1.println("STATUS,VL53L0X initialized");
+            return;
+        }
+        delay(100);
     }
-    vl53Sensor.setTimeout(50);
-    vl53Sensor.setMeasurementTimingBudget(20000);
-    vl53_initialized = true;
-    Serial.println("✅ VL53L0X initialized");
-    Serial1.println("STATUS,VL53L0X initialized");
+    
+    Serial.println("❌ VL53L0X sensor not found - using fallback");
+    Serial1.println("ERROR,VL53L0X sensor not found");
+    sensors.vl53_distance = 255;
 }
 
 void updateAllSensors() {
+    // Read VL53L0X first (most reliable)
     sensors.vl53_distance = readVL53L0X();
+    
+    // Read HC-SR04 sensors with small delays
     sensors.hcsr04_left = readHCSR04(ECHO_PIN_1);
-    delayMicroseconds(10);
-    sensors.hcsr04_back = readHCSR04(ECHO_PIN_2);   // <-- swapped
-    delayMicroseconds(10);
-    sensors.hcsr04_right = readHCSR04(ECHO_PIN_3);  // <-- swapped
+    delay(5);
+    sensors.hcsr04_back = readHCSR04(ECHO_PIN_2);
+    delay(5);
+    sensors.hcsr04_right = readHCSR04(ECHO_PIN_3);
+    
+    // Debug output every second
+    static unsigned long lastDebug = 0;
+    if (millis() - lastDebug > 1000) {
+        Serial.print("📊 Raw Sensors: VL53=");
+        Serial.print(sensors.vl53_distance);
+        Serial.print("cm, L=");
+        Serial.print(sensors.hcsr04_left);
+        Serial.print("cm, R=");
+        Serial.print(sensors.hcsr04_right);
+        Serial.print("cm, B=");
+        Serial.print(sensors.hcsr04_back);
+        Serial.println("cm");
+        lastDebug = millis();
+    }
 }
 
 uint8_t readVL53L0X() {
     if (!vl53_initialized) return 255;
+    
     uint16_t distance_mm = vl53Sensor.readRangeSingleMillimeters();
-    if (vl53Sensor.timeoutOccurred()) return 255;
+    if (vl53Sensor.timeoutOccurred()) {
+        return 255;
+    }
+    
     uint16_t distance_cm = distance_mm / 10;
-    if (distance_cm > 255) return 255;
-    return (uint8_t)distance_cm;
+    return (distance_cm > 255) ? 255 : (uint8_t)distance_cm;
 }
 
 uint8_t readHCSR04(int echoPin) {
+    // Ensure trigger is low
     digitalWrite(TRIG_PIN, LOW);
     delayMicroseconds(2);
+    
+    // Send trigger pulse
     digitalWrite(TRIG_PIN, HIGH);
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN, LOW);
+    
+    // Read echo with timeout
     unsigned long duration = pulseIn(echoPin, HIGH, SENSOR_TIMEOUT_US);
-    if (duration == 0) return 255;
+    
+    if (duration == 0) {
+        return 255;  // Timeout
+    }
+    
     uint16_t distance_cm = duration / 58;
     return (distance_cm > 255) ? 255 : (uint8_t)distance_cm;
 }
@@ -202,18 +253,18 @@ void checkObstacles() {
         obstacle_detected = true;
     }
 
-    // Emergency stop logic: clear stop if no obstacles
-        if (!obstacle_detected) {
+    // Emergency stop logic
+    if (!obstacle_detected) {
         if (emergencyStop) {
             emergencyStop = false;
-            Serial.println("Path clear - motors enabled");
+            Serial.println("✅ Path clear - motors enabled");
             Serial1.println("STATUS,Path clear - motors enabled");
         }
     } else {
         if (!emergencyStop) {
             emergencyStop = true;
             setMotorSpeed(0);
-            Serial.println("Obstacle detected - emergency stop");
+            Serial.println("🛑 Obstacle detected - emergency stop");
             Serial1.println("ALERT,Obstacle detected - emergency stop");
         }
     }
@@ -221,6 +272,7 @@ void checkObstacles() {
 }
 
 void sendSensorData() {
+    // CRITICAL: Use consistent format that ESP32 expects
     Serial1.print("SENSORS,");
     Serial1.print(sensors.vl53_distance);
     Serial1.print(",");
@@ -229,28 +281,20 @@ void sendSensorData() {
     Serial1.print(sensors.hcsr04_right);
     Serial1.print(",");
     Serial1.println(sensors.hcsr04_back);
-    static unsigned long lastDebugTime = 0;
-    if (millis() - lastDebugTime > 1000) {
-        Serial.print("📊 Sensors: Front=");
-        Serial.print(sensors.vl53_distance);
-        Serial.print("cm, Left=");
-        Serial.print(sensors.hcsr04_left);
-        Serial.print("cm, Right=");
-        Serial.print(sensors.hcsr04_right);
-        Serial.print("cm, Back=");
-        Serial.print(sensors.hcsr04_back);
-        Serial.println("cm");
-        lastDebugTime = millis();
-    }
 }
 
 void processUARTCommands() {
+    // Check if data is available
     if (!Serial1.available()) return;
+    
     String command = Serial1.readStringUntil('\n');
     command.trim();
+    
     if (command.length() == 0) return;
+    
     lastCommandTime = millis();
-    Serial.println("📨 Received: " + command);
+    Serial.println("📨 ESP32 → Arduino: " + command);
+    
     if (command.startsWith("MOVE,")) {
         parseMoveCommand(command);
     } else if (command == "STOP") {
@@ -316,24 +360,21 @@ void setMotorSpeed(int speed) {
         digitalWrite(BIN2, LOW);
         analogWrite(PWMA, 0);
         analogWrite(PWMB, 0);
-        Serial.println("🛑 Motors stopped");
         return;
     }
     int pwm_value = abs(speed);
     bool forward = (speed > 0);
-    // SWAPPED directions!
+    
     if (forward) {
         digitalWrite(AIN1, LOW);
         digitalWrite(AIN2, HIGH);
         digitalWrite(BIN1, LOW);
         digitalWrite(BIN2, HIGH);
-        Serial.println("⬇️ Motors reverse at " + String(pwm_value));
     } else {
         digitalWrite(AIN1, HIGH);
         digitalWrite(AIN2, LOW);
         digitalWrite(BIN1, HIGH);
         digitalWrite(BIN2, LOW);
-        Serial.println("⬆️ Motors forward at " + String(pwm_value));
     }
     analogWrite(PWMA, pwm_value);
     analogWrite(PWMB, pwm_value);
@@ -343,20 +384,8 @@ void sendStatusUpdate() {
     String status = "STATUS,Speed:" + String(motors.speed) +
                    ",Angle:" + String(motors.angle) +
                    ",Emergency:" + String(emergencyStop ? "true" : "false") +
-                   ",Obstacle:" + String(sensors.obstacle_detected ? "true" : "false");
+                   ",Obstacle:" + String(sensors.obstacle_detected ? "true" : "false") +
+                   ",VL53:" + String(vl53_initialized ? "OK" : "FAIL");
     Serial1.println(status);
     Serial.println("📋 " + status);
-}
-
-void printSensorDebug() {
-    Serial.print("🔍 DEBUG - VL53:");
-    Serial.print(sensors.vl53_distance);
-    Serial.print("cm, HC1:");
-    Serial.print(sensors.hcsr04_left);
-    Serial.print("cm, HC2:");
-    Serial.print(sensors.hcsr04_right);
-    Serial.print("cm, HC3:");
-    Serial.print(sensors.hcsr04_back);
-    Serial.print("cm, Obstacle:");
-    Serial.println(sensors.obstacle_detected ? "YES" : "NO");
 }

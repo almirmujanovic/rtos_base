@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 @dataclass
 class MqttConfig:
@@ -18,7 +18,70 @@ class VideoConfig:
 @dataclass
 class YoloConfig:
     model_path: str = 'yolov8n.pt'
-    device: str = '0'   # '0' for CUDA GPU, or 'cpu'
+    device: str = '1'   # '0' for CUDA GPU, or 'cpu'
     imgsz: int = 960
     conf: float = 0.25
     iou: float = 0.6
+
+
+# Add this to your existing config.py:
+
+@dataclass
+class ImageCaptureConfig:
+    """Configuration for image capture service"""
+    enabled: bool = True                  # ✅ EASILY TOGGLEABLE
+    save_directory: str = "training_images"  # Directory to save images
+    interval_ms: int = 500                   # Save every 500ms (2 FPS)
+    auto_start: bool = False                 # Start capturing on app launch
+    max_images: int = 0                      # 0 = unlimited
+    jpeg_quality: int = 95                   # High quality for training data
+  
+# Add this dataclass and constants to your existing config.py:
+
+@dataclass
+class LaneConfig:
+    """Lane detection configuration"""
+    roi_top_frac: float = 0.6
+    min_line_length: int = 10
+    max_line_gap: int = 20
+    theta_threshold: float = 3.0
+    hsv_lower: list = field(default_factory=lambda: [0, 0, 120])
+    hsv_upper: list = field(default_factory=lambda: [180, 50, 255])
+    canny_low: int = 30
+    canny_high: int = 100
+
+@dataclass
+class PIDConfig:
+    """PID controller configuration"""
+    kp: float = 1.0
+    ki: float = 0.01
+    kd: float = 0.4
+
+@dataclass
+class AutonomousConfig:
+    """Autonomous mode configuration"""
+    cmd_hz: int = 20
+    speed: int = 45
+
+# Servo constants (add these if not already present)
+CENTER_ANGLE: int = 90
+ANGLE_MIN: int = 25
+ANGLE_MAX: int = 155
+ANGLE_RANGE: int = min(CENTER_ANGLE-ANGLE_MIN, ANGLE_MAX-CENTER_ANGLE)
+
+# For backward compatibility, create individual constants
+LANE_ROI_TOP_FRAC = 0.4           # Bottom 60% for better curve detection
+LANE_MIN_LINE_LENGTH = 8          # Shorter for curve segments
+LANE_MAX_LINE_GAP = 15            # Smaller gaps for precision
+LANE_THETA_THRESHOLD = 1.5        # Very sensitive for sharp curves
+LANE_HSV_LOWER = [0, 0, 240]      # Very bright white
+LANE_HSV_UPPER = [180, 20, 255]   # Low saturation for pure white
+LANE_CANNY_LOW = 20               # Low for white paper edges
+LANE_CANNY_HIGH = 60              # Moderate for clean detection
+
+# PID tuned for responsive white paper following
+PID_KP = 1.4                      # More responsive for curves
+PID_KI = 0.015                    # Small integral for stability
+PID_KD = 0.6        
+AUTO_CMD_HZ = 30
+AUTO_SPEED = 55

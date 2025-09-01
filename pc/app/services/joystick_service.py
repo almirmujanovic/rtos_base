@@ -10,8 +10,8 @@ class JoystickService(QObject):
         pygame.init(); pygame.joystick.init()
         self.deadzone = 0.1
         self.max_speed = 255
-        self.min_angle = 55
-        self.max_angle = 125
+        self.min_angle = 25
+        self.max_angle = 155
         self.joy = None
         if pygame.joystick.get_count() > 0:
             self.joy = pygame.joystick.Joystick(0); self.joy.init()
@@ -23,7 +23,7 @@ class JoystickService(QObject):
 
     def _poll(self):
         if not self.joy:
-            self.joystickChanged.emit({"speed":0,"angle":90,"raw_x":0.0,"r2":0.0,"l2":0.0})
+            self.joystickChanged.emit({"speed":0,"angle":87,"raw_x":0.0,"r2":0.0,"l2":0.0})
             return
         pygame.event.pump()
         raw_x = self.joy.get_axis(0)

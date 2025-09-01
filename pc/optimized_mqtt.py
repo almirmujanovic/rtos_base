@@ -228,34 +228,13 @@ class RobotControlGUI:
     
     def on_mqtt_message(self, client, userdata, msg):
         current_time = time.time()
+        
         if msg.topic == "/robot/sensors":
-            b = msg.payload
-            if len(b) == 4:  # binary path
-                self.sensor_data = {
-                    'vl53': b[0],
-                    'hcsr04_1': b[1],
-                    'hcsr04_2': b[2],
-                    'hcsr04_3': b[3],
-                }
-                self.last_sensor_time = current_time
-            else:
-                # fallback: CSV text (for old firmware)
-                try:
-                    s = b.decode(errors='replace')
-                    parts = s.split(',')
-                    if len(parts) == 4:
-                        self.sensor_data = {
-                            'vl53': int(parts[0]) & 0xFF,
-                            'hcsr04_1': int(parts[1]) & 0xFF,
-                            'hcsr04_2': int(parts[2]) & 0xFF,
-                            'hcsr04_3': int(parts[3]) & 0xFF,
-                        }
-                        self.last_sensor_time = current_time
-                except Exception as e:
-                    print("parse error:", e)
+            self.parse_sensor_data(msg.payload.decode())
+            self.last_sensor_time = current_time
         elif msg.topic == "/robot/status":
-            self.arduino_status = msg.payload.decode(errors='replace')
-
+            status_msg = msg.payload.decode()
+            self.arduino_status = status_msg
     
     def parse_sensor_data(self, message):
         """Parse 8-bit sensor data: '45,150,255,75'"""

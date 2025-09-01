@@ -28,10 +28,10 @@ static const char *TAG = "MAIN";
 #endif
 
 // WiFi credentials
-#define WIFI_SSID "MojaTV_Full_352765"
-#define WIFI_PASS "almir2002"
-//#define WIFI_SSID "THINKPAD 0685"
-//#define WIFI_PASS "638\\Yg95"
+//#define WIFI_SSID "MojaTV_Full_352765"
+//#define WIFI_PASS "almir2002"
+#define WIFI_SSID "THINKPAD 0685"
+#define WIFI_PASS "638\\Yg95"
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                int32_t event_id, void* event_data) {

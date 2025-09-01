@@ -27,12 +27,16 @@ class MqttService(QObject):
         self.last_sensor_time = 0
         self.arduino_status = "Unknown"
         
-        # Command rate limiting - IDENTICAL to optimized_mqtt.py
-        self._last_cmd_ts = 0.0
-        self._rate_hz = 20
+        # ✅ IDENTICAL command rate limiting to optimized_mqtt.py
+        self._last_speed = 0
+        self._last_angle = 90
         self._connected = False
         self._running = False
         self._connection_thread = None
+        
+        # ✅ Timing tracking for performance monitoring
+        self._message_count = 0
+        self._last_timing_log = 0
 
     def start(self):
         """Start MQTT service - IDENTICAL logic to optimized_mqtt.py"""
@@ -46,7 +50,7 @@ class MqttService(QObject):
         """Connect to MQTT broker - IDENTICAL to optimized_mqtt.py connect_mqtt()"""
         try:
             print(f"🔌 Connecting to MQTT broker at {self.cfg.host}:{self.cfg.port}")
-            self.cli.connect(self.cfg.host, self.cfg.port, 60)  # Same keepalive as optimized
+            self.cli.connect(self.cfg.host, self.cfg.port, 60)  # ✅ Same 60s keepalive as optimized
             self.cli.loop_start()
             print("✅ MQTT connection initiated")
             return True
@@ -66,23 +70,20 @@ class MqttService(QObject):
 
     def publish_move(self, speed: int, angle: int):
         """Publish move command - IDENTICAL logic to optimized_mqtt.py send_command()"""
-        current_time = time.time()
-        
-        # Rate limiting - IDENTICAL to optimized_mqtt.py joystick_thread logic
-        if current_time - self._last_cmd_ts < 1.0/self._rate_hz:
-            return
         if not self._connected:
             return
         
-        # Command format - IDENTICAL to optimized_mqtt.py
-        command = f"MOVE,{int(speed)},{int(angle)}"
-        try:
-            self.cli.publish(self.cfg.topic_commands, command, qos=0, retain=False)
-            self.last_command_time = current_time
-            self._last_cmd_ts = current_time
-            print(f"📤 Published: {command}")
-        except Exception as e:
-            print(f"❌ Failed to publish command: {e}")
+        # ✅ IDENTICAL change detection from optimized_mqtt.py
+        if (abs(speed - self._last_speed) >= 5 or abs(angle - self._last_angle) >= 2):
+            command = f"MOVE,{int(speed)},{int(angle)}"
+            try:
+                self.cli.publish(self.cfg.topic_commands, command, qos=0, retain=False)
+                self.last_command_time = time.time()
+                self._last_speed = speed
+                self._last_angle = angle
+                print(f"📤 Published: {command}")
+            except Exception as e:
+                print(f"❌ Failed to publish command: {e}")
 
     # --- MQTT Callbacks - IDENTICAL logic to optimized_mqtt.py ---
     def _on_connect(self, client, userdata, flags, rc):
@@ -106,54 +107,65 @@ class MqttService(QObject):
         self.connectedChanged.emit(False)
 
     def _on_message(self, client, userdata, msg):
-        """Handle MQTT messages - IDENTICAL logic to optimized_mqtt.py on_mqtt_message"""
+        """Handle MQTT messages with timing - ENHANCED from optimized_mqtt.py"""
+        receive_start = time.time()
+        
         try:
-            current_time = time.time()
-            
             if msg.topic == "/robot/sensors":
-                # IDENTICAL binary/text detection logic from optimized_mqtt.py
+                # ✅ IDENTICAL text-only detection logic from optimized_mqtt.py (since we fixed ESP32 to send text)
                 b = msg.payload
-                if len(b) == 4:  # binary path - IDENTICAL
-                    self.sensor_data = {
-                        'vl53': b[0],
-                        'hcsr04_1': b[1],
-                        'hcsr04_2': b[2],
-                        'hcsr04_3': b[3],
-                    }
-                    self.last_sensor_time = current_time
-                    print(f"📊 Binary Sensors: VL53={self.sensor_data['vl53']}, HC1={self.sensor_data['hcsr04_1']}, HC2={self.sensor_data['hcsr04_2']}, HC3={self.sensor_data['hcsr04_3']}")
-                    self.sensorsUpdated.emit(self.sensor_data)
-                else:
-                    # fallback: CSV text (for old firmware) - IDENTICAL
-                    try:
-                        s = b.decode(errors='replace')
-                        parts = s.split(',')
-                        if len(parts) == 4:
-                            self.sensor_data = {
-                                'vl53': int(parts[0]) & 0xFF,
-                                'hcsr04_1': int(parts[1]) & 0xFF,
-                                'hcsr04_2': int(parts[2]) & 0xFF,
-                                'hcsr04_3': int(parts[3]) & 0xFF,
-                            }
-                            self.last_sensor_time = current_time
-                            print(f"📊 Text Sensors: VL53={self.sensor_data['vl53']}, HC1={self.sensor_data['hcsr04_1']}, HC2={self.sensor_data['hcsr04_2']}, HC3={self.sensor_data['hcsr04_3']}")
-                            self.sensorsUpdated.emit(self.sensor_data)
-                    except Exception as e:
-                        print("parse error:", e)
+                try:
+                    parse_start = time.time()
+                    s = b.decode(errors='replace')
+                    parts = s.split(',')
+                    if len(parts) == 4:
+                        self.sensor_data = {
+                            'vl53': int(parts[0]) & 0xFF,
+                            'hcsr04_1': int(parts[1]) & 0xFF,
+                            'hcsr04_2': int(parts[2]) & 0xFF,
+                            'hcsr04_3': int(parts[3]) & 0xFF,
+                        }
+                        parse_time = (time.time() - parse_start) * 1000000  # microseconds
+                        
+                        signal_start = time.time()
+                        self.last_sensor_time = receive_start
+                        self.sensorsUpdated.emit(self.sensor_data)
+                        signal_time = (time.time() - signal_start) * 1000000
+                        
+                        self._message_count += 1
+                        
+                        # ✅ Log timing every 50 messages like optimized script
+                        if self._message_count % 50 == 0:
+                            total_time = (time.time() - receive_start) * 1000000
+                            print(f"⏱️ PYTHON_MQTT: total={total_time:.0f}μs, parse={parse_time:.0f}μs, signal={signal_time:.0f}μs")
+                            print(f"📊 Sensors: VL53={self.sensor_data['vl53']}, HC1={self.sensor_data['hcsr04_1']}, HC2={self.sensor_data['hcsr04_2']}, HC3={self.sensor_data['hcsr04_3']}")
+                        
+                except Exception as e:
+                    print(f"❌ Sensor parse error: {e}")
                         
             elif msg.topic == "/robot/status":
-                # IDENTICAL status handling from optimized_mqtt.py
+                # ✅ IDENTICAL status handling from optimized_mqtt.py
                 self.arduino_status = msg.payload.decode(errors='replace')
                 self.statusUpdated.emit(self.arduino_status)
                 
-                # Emergency stop detection - enhanced from optimized_mqtt.py logic
+                # ✅ Handle timing messages from ESP32/Arduino
+                if self.arduino_status.startswith("TIMING,"):
+                    print(f"📊 DEVICE_TIMING: {self.arduino_status}")
+                
+                # ✅ Emergency stop detection - enhanced from optimized_mqtt.py logic
                 is_emergency = ("emergency" in self.arduino_status.lower() or 
                               "blocked" in self.arduino_status.lower() or
-                              "obstacle" in self.arduino_status.lower())
+                              "obstacle" in self.arduino_status.lower() or
+                              "alert" in self.arduino_status.lower())
                 self.emergencyStopChanged.emit(is_emergency)
                 
         except Exception as e:
             print(f"❌ Failed to process MQTT message: {e}")
+        
+        # ✅ Log slow message processing like optimized script
+        total_time = (time.time() - receive_start) * 1000000
+        if total_time > 5000:  # Log if >5ms (suspicious)
+            print(f"⚠️ SLOW_MESSAGE: {total_time:.0f}μs for topic {msg.topic}")
 
     # --- Properties matching optimized_mqtt.py functionality ---
     @property
@@ -199,3 +211,34 @@ class MqttService(QObject):
     def get_arduino_status(self):
         """Get Arduino status - IDENTICAL to optimized_mqtt.py"""
         return self.arduino_status
+
+    # ✅ NEW: Additional methods for compatibility with existing app code
+    def publish_command(self, command: str):
+        """Publish raw command - for app compatibility"""
+        if not self._connected:
+            return
+        
+        try:
+            self.cli.publish(self.cfg.topic_commands, command, qos=0, retain=False)
+            self.last_command_time = time.time()
+            print(f"📤 Published raw: {command}")
+        except Exception as e:
+            print(f"❌ Failed to publish raw command: {e}")
+
+    def get_connection_status(self):
+        """Get detailed connection status - for app diagnostics"""
+        return {
+            'connected': self._connected,
+            'broker': f"{self.cfg.host}:{self.cfg.port}",
+            'sensor_age': self.get_sensor_age(),
+            'command_age': self.get_command_age(),
+            'message_count': self._message_count,
+            'has_obstacles': self.has_obstacles(),
+            'obstacles': self.get_obstacles()
+        }
+
+    def reset_stats(self):
+        """Reset performance statistics - for app maintenance"""
+        self._message_count = 0
+        self._last_timing_log = time.time()
+        print("📊 MQTT statistics reset")

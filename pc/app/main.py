@@ -2,7 +2,7 @@ from __future__ import annotations
 import sys
 import argparse
 from PySide6.QtWidgets import QApplication
-from config import MqttConfig, VideoConfig, YoloConfig
+from config import MqttConfig, VideoConfig, YoloConfig, ImageCaptureConfig
 from ui.main_window import MainWindow
 
 def parse_args():
@@ -17,6 +17,8 @@ def parse_args():
     p.add_argument('--conf', type=float, default=0.25)
     return p.parse_args()
 
+
+
 if __name__ == '__main__':
     args = parse_args()
     app = QApplication(sys.argv)
@@ -24,7 +26,8 @@ if __name__ == '__main__':
     vcfg = VideoConfig(rtsp_url=args.rtsp, rtp_port=args.rtp_port, flip_vertical=args.flip_vert)
     mcfg = MqttConfig(host=args.mqtt_host, port=args.mqtt_port)
     ycfg = YoloConfig(device=args.device, imgsz=args.imgsz, conf=args.conf)
+    icfg = ImageCaptureConfig()
 
-    win = MainWindow(vcfg, mcfg, ycfg)
+    win = MainWindow(vcfg, mcfg, ycfg, icfg)
     win.show()
     sys.exit(app.exec())

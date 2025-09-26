@@ -30,14 +30,13 @@ static constexpr size_t MAX_PKTS_PER_FRAME = 28;          // 28 * 1300 ≈ 36.4 
 // kratko "zagrijavanje"
 static constexpr int    WARMUP_GOOD_FRAMES = 3;
 
-// pacing (FPS) – zadrži ~12.5 fps baseline, ali ne diži iznad 12.5 ako je link slab
+// pacing (FPS) – ~12.5 fps baseline
 static constexpr int PERIOD_MS_BASE = 80;                 // ~12.5 fps
 static constexpr int PERIOD_MS_MIN  = 80;                 // ne forsirati >12.5 fps na VGA
 static constexpr int PERIOD_MS_MAX  = 220;                // dovoljno prostora za backoff
 
 // OV2640 kvaliteta (niži broj = bolja kvaliteta = veći fajl)
-// podigni granice da forsiraš jaču kompresiju (manji frame)
-static constexpr int Q_LOWER_LIMIT = 32;                  // najbolja dozvoljena (lošija nego 30)
+static constexpr int Q_LOWER_LIMIT = 32;                  // najbolja dozvoljena 
 static constexpr int Q_UPPER_LIMIT = 44;                  // najlošija dozvoljena
 
 // spora adaptacija (prozor ~3s @ ~12.5 fps)

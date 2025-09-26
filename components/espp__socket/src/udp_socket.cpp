@@ -111,12 +111,18 @@ bool UdpSocket::send(std::string_view data, const UdpSocket::SendConfig &send_co
   // Congestion-aware send: brief retries on ENOMEM/ENOBUFS/EAGAIN
   constexpr int kMaxRetries = 3;
   for (int attempt = 0; attempt < kMaxRetries; ++attempt) {
+    
     int num_bytes_sent = sendto(socket_, data.data(), data.size(), 0,
                                 (struct sockaddr *)server_address, sizeof(*server_address));
     if (num_bytes_sent >= 0) {
       logger_.debug("Client sent {} bytes", num_bytes_sent);
       break;
     }
+    int err = errno;
+    if (err == ENOMEM)  g_send_enomem.fetch_add(1);
+    if (err == ENOBUFS) g_send_enobufs.fetch_add(1);
+    if (err == EAGAIN)  g_send_eagain.fetch_add(1);
+    // keep your tiny retry/backoff
 
     // grab errno once (lwIP maps ERR_MEM to ENOMEM)
     int err = errno;

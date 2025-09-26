@@ -15,22 +15,22 @@ void uart_task(void *pvParameters) {
     char rx_buffer[128] = {0};
 
     while (1) {
-    int len = uart_read_line(rx_buffer, sizeof(rx_buffer) - 1);
-    if (len > 0) {
-        rx_buffer[len] = '\0';
-        if (strlen(rx_buffer) > 1) {
-            char *line = strtok(rx_buffer, "\r\n");
-            while (line != NULL) {
-                if (strlen(line) > 1) {
-                    ESP_LOGD(TAG, "UART Received: %s", line);
-                    mqtt_publish_uart_data(line);  
+        int len = uart_read_line(rx_buffer, sizeof(rx_buffer) - 1);
+        if (len > 0) {
+            rx_buffer[len] = '\0';
+            if (strlen(rx_buffer) > 1) {
+                char *line = strtok(rx_buffer, "\r\n");
+                while (line != NULL) {
+                    if (strlen(line) > 1) {
+                        ESP_LOGD(TAG, "UART Received: %s", line);
+                        mqtt_publish_uart_data(line);  
+                    }
+                    line = strtok(NULL, "\r\n");
                 }
-                line = strtok(NULL, "\r\n");
             }
         }
+
+        vTaskDelay(pdMS_TO_TICKS(5));  
     }
-
-    vTaskDelay(pdMS_TO_TICKS(5));  //  fast
 }
 
-}

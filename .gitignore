@@ -4,3 +4,6 @@ sdkconfig.old
 # RTSP video recordings
 pc/recordings/*
 !pc/recordings/.gitkeep
+
+components/esp32-camera/*
+components/websocket_server/*

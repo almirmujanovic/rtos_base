@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <string.h>
-#include <unistd.h>  // for close()
+#include <unistd.h>  
 
 #ifndef CONFIG_LOG_MAXIMUM_LEVEL
 #define CONFIG_LOG_MAXIMUM_LEVEL ESP_LOG_VERBOSE
@@ -16,7 +16,7 @@
 #define TAG "CAMERA_TASK" 
 extern int camera_sock;
 
-// Sends all data reliably over socket
+// Sends all data over socket
 static bool send_all(int sock, const void *data, size_t len) {
     size_t total_sent = 0;
     const uint8_t *ptr = (const uint8_t *)data;

@@ -17,11 +17,11 @@ class VideoConfig:
 
 @dataclass
 class YoloConfig:
-    model_path: str = 'yolov8n.pt'
-    device: str = '1'   # '0' for CUDA GPU, or 'cpu'
-    imgsz: int = 960
-    conf: float = 0.25
-    iou: float = 0.6
+    model_path: str = 'models/model2.pt'
+    device: str = 'cpu'   # '0' for CUDA GPU, or 'cpu'
+    imgsz: int = 512
+    conf: float = 0.55
+    iou: float = 0.5
 
 
 # Add this to your existing config.py:
@@ -29,15 +29,13 @@ class YoloConfig:
 @dataclass
 class ImageCaptureConfig:
     """Configuration for image capture service"""
-    enabled: bool = True                  # ✅ EASILY TOGGLEABLE
+    enabled: bool = True                  
     save_directory: str = "training_images"  # Directory to save images
-    interval_ms: int = 500                   # Save every 500ms (2 FPS)
+    interval_ms: int = 1000                   # Save every 1000ms (1 FPS)
     auto_start: bool = False                 # Start capturing on app launch
     max_images: int = 0                      # 0 = unlimited
     jpeg_quality: int = 95                   # High quality for training data
   
-# Add this dataclass and constants to your existing config.py:
-
 @dataclass
 class LaneConfig:
     """Lane detection configuration"""
@@ -63,13 +61,12 @@ class AutonomousConfig:
     cmd_hz: int = 20
     speed: int = 45
 
-# Servo constants (add these if not already present)
+# Servo konstante
 CENTER_ANGLE: int = 90
 ANGLE_MIN: int = 25
 ANGLE_MAX: int = 155
 ANGLE_RANGE: int = min(CENTER_ANGLE-ANGLE_MIN, ANGLE_MAX-CENTER_ANGLE)
 
-# For backward compatibility, create individual constants
 LANE_ROI_TOP_FRAC = 0.4           # Bottom 60% for better curve detection
 LANE_MIN_LINE_LENGTH = 8          # Shorter for curve segments
 LANE_MAX_LINE_GAP = 15            # Smaller gaps for precision
@@ -79,9 +76,9 @@ LANE_HSV_UPPER = [180, 20, 255]   # Low saturation for pure white
 LANE_CANNY_LOW = 20               # Low for white paper edges
 LANE_CANNY_HIGH = 60              # Moderate for clean detection
 
-# PID tuned for responsive white paper following
-PID_KP = 1.4                      # More responsive for curves
-PID_KI = 0.015                    # Small integral for stability
+# PID 
+PID_KP = 1.4                    
+PID_KI = 0.015                  
 PID_KD = 0.6        
 AUTO_CMD_HZ = 30
 AUTO_SPEED = 55

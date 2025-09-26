@@ -18,7 +18,7 @@ typedef struct {
 static mqtt_stats_t mqtt_stats = {0};
 static esp_mqtt_client_handle_t global_mqtt_client = NULL;
 
-// ✅ ROBUST: Manual parsing instead of sscanf for reliability
+
 void parse_and_publish_sensor_data_8bit(const char *line) {
     int64_t parse_start = esp_timer_get_time();
     
@@ -30,13 +30,13 @@ void parse_and_publish_sensor_data_8bit(const char *line) {
 
     if (!global_mqtt_client) return;
 
-    // ✅ FAST: Manual parsing optimized for "SENSORS,vl53,hc1,hc2,hc3"
+    // Manual parsing optimized for "SENSORS,vl53,hc1,hc2,hc3"
     const char* p = line + 8;  // Skip "SENSORS,"
     
     int values[4] = {0};
     int value_idx = 0;
     
-    // Parse each number manually for speed and reliability
+    // Parse each number manually 
     for (int i = 0; i < 4 && *p != '\0' && *p != '\n' && *p != '\r'; i++) {
         int num = 0;
         
@@ -61,7 +61,7 @@ void parse_and_publish_sensor_data_8bit(const char *line) {
     
     int64_t parse_time = esp_timer_get_time() - parse_start;
     
-    // ✅ TEXT FORMAT: Proven to work well
+    // tekstualni format
     char sensor_msg[20];
     snprintf(sensor_msg, sizeof(sensor_msg), "%d,%d,%d,%d", 
              values[0], values[1], values[2], values[3]);
@@ -86,7 +86,7 @@ void parse_and_publish_sensor_data_8bit(const char *line) {
     }
 }
 
-// ✅ ENHANCED: UART data router with timing
+//UART data router with timing
 void mqtt_publish_uart_data(const char *line) {
     if (!line || strlen(line) == 0) return;
     
@@ -122,7 +122,7 @@ void mqtt_publish_uart_data(const char *line) {
     }
 }
 
-// ✅ Performance monitoring
+// performance monitoring
 void mqtt_log_performance_stats(void) {
     static int64_t last_stats = 0;
     int64_t now = esp_timer_get_time();
@@ -161,7 +161,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         break;
         
     case MQTT_EVENT_PUBLISHED:
-        // Don't log every publish for performance
         break;
         
     case MQTT_EVENT_DATA:
@@ -207,11 +206,11 @@ void mqtt_app_start(void) {
             .client_id = "esp32-robot-client",
         },
         .session = {
-            .keepalive = 60,                    // ✅ Match working script
+            .keepalive = 60,                    
             .disable_clean_session = false,
         },
         .network = {
-            .timeout_ms = 3000,                 // ✅ Reasonable timeout
+            .timeout_ms = 3000,                
             .refresh_connection_after_ms = 0,
             .disable_auto_reconnect = false,
         },
@@ -220,7 +219,7 @@ void mqtt_app_start(void) {
             .out_size = 2048,
         },
         .task = {
-            .priority = 18,                     // ✅ Lower than UART task to prevent blocking
+            .priority = 18,                     
             .stack_size = 8192,
         }
     };
@@ -246,7 +245,7 @@ void mqtt_app_start(void) {
     ESP_LOGI(TAG, "✅ MQTT client started (TEXT FORMAT, connection tracking enabled)");
 }
 
-// ✅ API functions for status checking
+
 bool mqtt_is_connected(void) {
     return mqtt_stats.connected && global_mqtt_client != NULL;
 }

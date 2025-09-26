@@ -10,8 +10,6 @@ void rtsp_camera_stream_task(void *param) {
     ESP_LOGI(TAG, "RTSP camera streaming task started");
     
     while (1) {
-        // RTSP server handles frame retrieval internally
-        // Just keep the task alive
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }

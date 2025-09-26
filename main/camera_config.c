@@ -44,18 +44,16 @@ esp_err_t init_camera(void) {
         .pin_href       = HREF_GPIO_NUM,
         .pin_pclk       = PCLK_GPIO_NUM,
 
-        // Clock config: try 16MHz on ESP32-S3 for EDMA, fallback to 20MHz if needed
         .xclk_freq_hz   = 20000000,
         .ledc_timer     = LEDC_TIMER_1,
         .ledc_channel   = LEDC_CHANNEL_1,
 
-        // Image format / size
-        .pixel_format   = PIXFORMAT_JPEG,    // JPEG is fastest for streaming
-        .frame_size     = FRAMESIZE_VGA,    // Start low; increase after testing stability
-        .jpeg_quality   = 35,                // 10–20 = high quality; higher number = smaller file
-        .fb_count       = 1,                 // 2+ for continuous mode in JPEG
+        .pixel_format   = PIXFORMAT_JPEG,    
+        .frame_size     = FRAMESIZE_VGA,  
+        .jpeg_quality   = 35,                
+        .fb_count       = 1,                 
         .grab_mode      = CAMERA_GRAB_LATEST,
-        .fb_location    = CAMERA_FB_IN_PSRAM // Use PSRAM for frame buffers
+        .fb_location    = CAMERA_FB_IN_PSRAM 
     };
 
     esp_err_t err = esp_camera_init(&config);
@@ -67,11 +65,11 @@ esp_err_t init_camera(void) {
     // Sensor tuning
     sensor_t *s = esp_camera_sensor_get();
     if (s) {
-        s->set_framesize(s, FRAMESIZE_VGA); // Match config              // Lower = better quality (0=best, 63=worst)
+        s->set_framesize(s, FRAMESIZE_VGA); // Match config              
         s->set_saturation(s, -1);
         s->set_sharpness(s, -2);
         s->set_denoise(s, 2);
-        s->set_vflip(s, 1);                   // Flip if image is upside-down
+        s->set_vflip(s, 1);                   
     }
 
     ESP_LOGI(TAG, "Camera initialized successfully");

@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 from PySide6.QtCore import QObject, Signal, QThread
 
-# --- Tables from your client (unchanged) ---
+# --- Tables from  client (unchanged) ---
 dc_luminance_table = bytearray([
     0x00,
     0x01, 0x05, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,

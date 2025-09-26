@@ -1,0 +1,18 @@
+[8]  https://www.ibm.com/think/topics/real-time-operating-system?utm_source=chatgpt.com
+[9] https://academy.nordicsemi.com/courses/nrf-connect-sdk-fundamentals/lessons/lesson-7-multithreaded-applications/topic/bare-metal-vs-rtos-programming/
+[10]  https://en.wikipedia.org/wiki/OpenCV
+[11]  https://en.wikipedia.org/wiki/OpenVX
+[12]  https://www.mdpi.com/2073-431X/13/12/336
+[13]  https://www.precedenceresearch.com/autonomous-vehicle-market?utm_source=chatgpt.com
+[14]  https://www.fortunebusinessinsights.com/autonomous-vehicle-market-109045?utm_source=chatgpt.com
+[15]  https://www.marketwatch.com/story/the-next-vehicles-to-go-driverless-may-shock-you-and-could-be-a-great-investment-b5dfc4f3?utm_source=chatgpt.com
+[16]  https://www.reuters.com/business/autos-transportation/qualcomm-bmw-launch-automated-driving-system-better-compete-growing-market-2025-09-05
+[17]  https://www.jaycon.com/7-embedded-vision-technologies-of-2025
+[18]  https://www.caranddriver.com/news/a61423917/rimac-autonomous-verne-robotaxi/
+[19]  https://robotsguide.com/robots/waymo
+[20]   https://docs.donkeycar.com
+[21]  https://developer.nvidia.com/blog/nvidia-jetson-project-of-the-month-an-ai-powered-autonomous-miniature-race-car-gets-on-track/
+[22]  https://www.uni-lj.si/en/news/2024-03-15-duckiebots-autonomous-driving-robot-cars-in-a-small-scale-city-model
+[23]  https://store.arduino.cc/products/uno-r4-minima
+[24]  https://store.freenove.com/products/fnk0085
+

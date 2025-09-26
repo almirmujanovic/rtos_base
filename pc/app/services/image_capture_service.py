@@ -31,7 +31,6 @@ class ImageCaptureService(QObject):
         self._last_save_time = 0
         self._start_time = 0
         
-        # ✅ FIXED: Store ORIGINAL clean frame without overlay
         self._original_frame: Optional[np.ndarray] = None  # Clean frame without overlay
         self._overlay_frame: Optional[np.ndarray] = None   # Frame with overlay (for display)
         self._frame_timestamp = 0
@@ -47,7 +46,7 @@ class ImageCaptureService(QObject):
         """Create save directory if it doesn't exist"""
         try:
             self.save_directory.mkdir(parents=True, exist_ok=True)
-            print(f"📁 Image save directory: {self.save_directory.absolute()}")
+            print(f" Image save directory: {self.save_directory.absolute()}")
         except Exception as e:
             self.errorOccurred.emit(f"Failed to create directory: {e}")
     
@@ -107,11 +106,11 @@ class ImageCaptureService(QObject):
             return
             
         if not self._enabled:
-            print("⚠️ Image capture is disabled")
+            print(" Image capture is disabled")
             return
             
-        print(f"📸 Starting image capture every {self.interval_ms}ms")
-        print(f"💾 Saving CLEAN images (no overlay) to: {self.save_directory.absolute()}")
+        print(f" Starting image capture every {self.interval_ms}ms")
+        print(f" Saving CLEAN images (no overlay) to: {self.save_directory.absolute()}")
         
         self._capturing = True
         self._start_time = time.time()
@@ -137,7 +136,7 @@ class ImageCaptureService(QObject):
     
     def _save_current_frame(self):
         """Save the current ORIGINAL (clean) frame to disk"""
-        # ✅ FIXED: Save ORIGINAL frame without overlay
+        #  FIXED: Save ORIGINAL frame without overlay
         if self._original_frame is None:
             return
             
@@ -147,7 +146,7 @@ class ImageCaptureService(QObject):
             filename = f"frame_{timestamp.strftime('%Y%m%d_%H%M%S_%f')[:-3]}.jpg"
             filepath = self.save_directory / filename
             
-            # ✅ FIXED: Use ORIGINAL frame (BGR format for OpenCV)
+            #  FIXED: Use ORIGINAL frame (BGR format for OpenCV)
             frame_to_save = self._original_frame
             
             # Convert RGB to BGR if needed (OpenCV expects BGR)
@@ -261,3 +260,22 @@ class ImageCaptureService(QObject):
             'has_overlay_frame': self._overlay_frame is not None,
             'frame_age': time.time() - self._frame_timestamp if self._frame_timestamp > 0 else 0
         }
+    # Add this method to the ImageCaptureService class (after save_single_frame method):
+
+    def capture_from_joystick(self):
+        """Capture single image triggered by joystick button"""
+        if not self._enabled:
+            print(" Image capture is disabled - enable it first")
+            return
+            
+        if self._original_frame is None:
+            print(" No frame available for joystick capture")
+            return
+            
+        # Use joystick prefix for easy identification
+        self.save_single_frame("joystick")
+        print(" Joystick image captured!")
+    
+    def capture_with_prefix(self, prefix: str = "manual"):
+        """Capture single image with custom prefix (for different trigger sources)"""
+        self.save_single_frame(prefix)
